@@ -3,6 +3,21 @@
     "BMAD-METHOD Docs": {
       "type": "sse",
       "url": "https://gitmcp.io/bmad-code-org/BMAD-METHOD"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "type": "stdio"
+    },
+    "shadcn-ui": {
+      "command": "npx",
+      "args": [
+        "@jpisnice/shadcn-ui-mcp-server",
+        "--github-api-key",
+        "ghp_your_token_here"
+      ]
     }
   }
 }
