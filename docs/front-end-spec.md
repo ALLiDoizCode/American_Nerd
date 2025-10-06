@@ -75,8 +75,7 @@ graph TD
     C -->|Expert| E[Expert Dashboard]
 
     D --> D1[Project Details]
-    D --> D2[Create Project - MCP Only]
-    D --> D3[Payment Management]
+    D --> D2[Payment Management]
 
     D1 --> D1A[Planning Marketplace Browser]
     D1 --> D1B[Development Marketplace Browser]
@@ -113,11 +112,12 @@ graph TD
 ### Navigation Structure
 
 **Primary Navigation:**
-- **Persistent Top Bar** (Desktop/Tablet): Logo (left) → Role-specific primary links (center) → Notifications + Avatar Menu (right)
+- **Persistent Top Bar** (Desktop/Tablet): Logo (left) → Role Switcher (center-left) → Role-specific primary links (center) → Notifications + Avatar Menu (right)
+  - **Role Switcher:** Dropdown showing current active role with ability to switch between Client/Expert/QA roles (supports FR27-FR28 multi-role support)
   - Client: "My Projects" | "Find Experts" | "Payments"
   - Expert: "Opportunities" | "My Bids" | "Earnings" | "Profile"
   - QA: "Review Queue" | "My Reviews" | "Earnings"
-- **Mobile Bottom Navigation**: 4-5 icons (Dashboard | Browse | Notifications | Profile)
+- **Mobile Bottom Navigation**: 4-5 icons (Dashboard | Browse | Notifications | Profile) + Role switcher in avatar menu
 
 **Secondary Navigation:**
 - **Contextual Tabs** within pages (e.g., Project Details → "Overview" | "Planning" | "Development" | "Documents")
@@ -507,7 +507,7 @@ graph TD
     B --> C[Project Details Page Loads]
 
     C --> D[View: Multi-Stage Pipeline Visualization]
-    D --> E[Stages: Analyst → PM → Architect → UX → Dev → QA]
+    D --> E[Stages: PM → Architect → UX → Dev → QA]
     E --> F[Highlight: Current Active Stage]
 
     C --> G[View: Next Action Card]
@@ -580,8 +580,9 @@ graph TD
   - Card 4: "4. GitHub Delivery" (Icon: GitHub) - "Receive quality code + docs"
 
 - **Workflow Visualization (Horizontal Scroll):**
-  - Six stage badges: Analyst → PM → Architect → UX → Dev → QA
+  - Five marketplace stage badges: PM → Architect → UX → Dev → QA
   - Below each: Brief description of deliverable
+  - Note: Brief creation via MCP precedes PM stage
 
 - **Social Proof Section:**
   - "Featured Experts" - 3 expert profile cards with avatar, role, rating
@@ -599,7 +600,7 @@ graph TD
 **Tablet/Desktop Adaptation (768px+):**
 - Hero section: Split layout - Content left (60%), Animated workflow visualization right (40%)
 - How It Works: 2x2 grid instead of vertical stack
-- Workflow Visualization: Full 6-stage pipeline visible without scroll
+- Workflow Visualization: Full 5-marketplace-stage pipeline visible without scroll (Brief creation via MCP shown as prerequisite)
 - Featured Experts: 6 cards in 3x2 grid
 - FAQ: Two-column layout
 
@@ -745,7 +746,7 @@ graph TD
   - Right: Settings icon (3-dot menu) → "Edit Project" | "Archive" | "Delete"
 
 - **Stage Pipeline Visualization (Horizontal Scroll):**
-  - Six stage cards: Analyst | PM | Architect | UX | Developer | QA
+  - Five marketplace stage cards: PM | Architect | UX | Developer | QA (Brief creation via MCP analyst.txt agent precedes these stages)
   - Each card shows:
     - Stage icon + name
     - Status: Completed ✓ | In Progress ⏳ | Pending ⏸ | Blocked ❌
@@ -1156,7 +1157,7 @@ graph TD
 - Blocked: Red X, filled red background
 
 **Usage Guidelines:**
-- Always show all 6 stages (Analyst → PM → Architect → UX → Dev → QA)
+- Always show all 5 marketplace stages (PM → Architect → UX → Dev → QA), with optional Brief stage indicator showing "Created via MCP"
 - Include expert avatar for completed/active stages
 - Clickable stages open stage details
 - Use consistent color coding across platform
@@ -1272,6 +1273,55 @@ graph TD
 - Link to blockchain explorer
 - Show estimated time remaining
 - Provide retry mechanism for failed transactions
+
+---
+
+#### Component 8: RoleSwitcher
+
+**Purpose:** Allow users to switch between Client, Expert, and QA roles within a single account (FR27-FR28)
+
+**Variants:**
+- Desktop: Dropdown in top navigation bar (center-left)
+- Mobile: Option in avatar menu
+
+**States:**
+- Default: Shows current active role with down arrow icon
+- Expanded: Shows all available roles user has access to
+- Switching: Brief loading state during role transition
+
+**Usage Guidelines:**
+- Display role badge icon + role name (e.g., "👤 Client Mode" or "🔧 Expert Mode")
+- Show role-specific reputation score next to each role option
+- Disable roles user hasn't activated in settings
+- Switching role triggers navigation to corresponding dashboard
+- Preserve context where possible (e.g., switching from Client viewing opportunity to Expert mode opens same opportunity)
+- Show tooltip "Switch between Client, Expert, and QA roles" on first visit
+
+**Interaction Flow:**
+```
+1. User clicks RoleSwitcher dropdown
+2. Modal shows available roles:
+   - [Active] 👤 Client Mode (3 active projects)
+   - 🔧 Expert Mode - PM (4.8★ rating)
+   - 🔧 Expert Mode - Developer (4.9★ rating)
+   - 🔍 QA Reviewer (4.7★ rating)
+3. User selects different role
+4. Brief loading state
+5. Navigation updates to new role's dashboard
+6. Top navigation links update to role-specific options
+```
+
+**Desktop Layout:**
+- Position: Between logo and primary navigation links
+- Width: Auto (min 150px)
+- Height: 40px (matches nav bar)
+- Border: 1px solid Neutral 200
+- Background: Neutral 50 (hover: Neutral 100)
+
+**Mobile Layout:**
+- Position: Inside avatar menu dropdown
+- Shows current role with "Switch Role" option
+- Tapping opens role selection modal (full screen)
 
 ---
 
@@ -1548,8 +1598,10 @@ graph TD
 3. **Multi-Project Dashboard:** For clients with 5+ projects, should we add filtering/search to project dashboard?
 
 **Technical Decisions:**
-1. **Real-Time Updates:** Use WebSocket for live updates (escrow status, GitHub commits) or polling? Consider Supabase Realtime vs manual polling.
-2. **Wallet Persistence:** Should wallet connection persist across sessions, or require reconnection on each visit for security?
+1. **Wallet Persistence:** Should wallet connection persist across sessions, or require reconnection on each visit for security?
+
+**RESOLVED:**
+- ✅ **Real-Time Updates:** Supabase Realtime (WebSocket) for escrow status + GitHub webhooks for commit/PR events
 
 ---
 
