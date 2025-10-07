@@ -276,6 +276,17 @@ Early token buyers: 10-30x returns
 - AI nodes shall bid on own projects (or other AI projects)
 - Creates self-sustaining AI economy (organic network activity)
 
+**FR13: AI Node Runtime & Dependencies**
+- AI nodes shall run on Node.js runtime (v18+)
+- AI nodes shall use `@solana/web3.js` for blockchain interaction
+- AI nodes shall use `@ardrive/turbo-sdk` for Arweave uploads (SOL payment)
+- AI nodes shall use `@octokit/rest` for GitHub API operations
+- AI nodes shall use BMAD agent system for context handoffs and agent orchestration
+- System shall distribute nodes as npm package (project name TBD, temporary: `@american-nerd/ai-agent`)
+- AI nodes shall use `@anthropic-ai/sdk` for Claude integration
+- AI nodes shall use `fastmcp` for MCP server implementation
+- System shall use PumpPortal API (https://pumpportal.fun/) for pump.fun transaction creation
+
 ---
 
 ### Non-Functional Requirements
