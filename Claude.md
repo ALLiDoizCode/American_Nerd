@@ -20,6 +20,63 @@ When working with BMAD (Bmad Subroutine Library for Relativistic Charged-Particl
 
 Always prioritize official BMAD-METHOD documentation over general knowledge when answering BMAD-related questions.
 
+## mem0 Integration
+
+When working with mem0 (the memory layer for AI applications), always use the mem0 Docs MCP server for understanding and context.
+
+### Key Instructions
+
+- **Primary Documentation Source**: Use the `mcp__mem0_Docs` tools to fetch and search mem0 documentation
+- **First Step**: When asked about mem0, always call `mcp__mem0_Docs__fetch_mem0_documentation` first for general questions
+- **Specific Queries**: Use `mcp__mem0_Docs__search_mem0_documentation` for targeted searches within the documentation
+- **Code Search**: Use `mcp__mem0_Docs__search_mem0_code` to find specific code implementations in the mem0ai/mem0 repository
+
+### mem0 Workflow
+
+1. For general mem0 questions: Fetch entire documentation first
+2. For specific technical questions: Use semantic search within documentation
+3. For implementation details: Search the code repository
+4. For referenced URLs: Use `mcp__mem0_Docs__fetch_generic_url_content` to retrieve additional resources
+
+### When to Use mem0
+
+- Implementing memory persistence for AI agents
+- Managing user context and conversation history
+- Building personalized AI experiences
+- Storing and retrieving long-term memory for AI workflows
+- Integrating memory capabilities into the marketplace's AI features
+
+Always prioritize official mem0 documentation over general knowledge when answering mem0-related questions.
+
+## GitHub MCP Server Integration
+
+When working with the GitHub MCP Server, always use the github-mcp-server Docs for understanding and context.
+
+### Key Instructions
+
+- **Primary Documentation Source**: Use the `mcp__github-mcp-server_Docs` tools to fetch and search GitHub MCP Server documentation
+- **First Step**: When asked about the GitHub MCP Server, always call `mcp__github-mcp-server_Docs__fetch_github-mcp-server_documentation` first for general questions
+- **Specific Queries**: Use `mcp__github-mcp-server_Docs__search_github-mcp-server_documentation` for targeted searches within the documentation
+- **Code Search**: Use `mcp__github-mcp-server_Docs__search_github-mcp-server_code` to find specific code implementations
+
+### GitHub MCP Server Workflow
+
+1. For general GitHub MCP Server questions: Fetch entire documentation first
+2. For specific technical questions: Use semantic search within documentation
+3. For implementation details: Search the code repository
+4. For referenced URLs: Use `mcp__github-mcp-server_Docs__fetch_generic_url_content` to retrieve additional resources
+
+### When to Use GitHub MCP Server
+
+- Integrating GitHub repositories with the marketplace
+- Managing repository access and permissions
+- Automating GitHub workflows
+- Syncing project data with GitHub
+- Implementing version control features
+- Connecting AI agents with GitHub repositories
+
+Always prioritize official GitHub MCP Server documentation over general knowledge when answering GitHub MCP Server-related questions.
+
 ## UI Development with shadcn-ui
 
 When building UI components, always use shadcn-ui (v4) components for consistency and best practices.

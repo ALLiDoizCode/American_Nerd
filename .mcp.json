@@ -4,6 +4,20 @@
       "type": "sse",
       "url": "https://gitmcp.io/bmad-code-org/BMAD-METHOD"
     },
+    "mem0 Docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/mem0ai/mem0"
+      ]
+    },
+    "github-mcp-server Docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/github/github-mcp-server"
+      ]
+    },
     "playwright": {
       "command": "npx",
       "args": [
