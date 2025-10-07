@@ -1,0 +1,28 @@
+{
+  "commands": [
+    {
+      "name": "research-github-mcp",
+      "description": "Research GitHub MCP servers for AI agent integration (CRITICAL - MVP blocker)",
+      "taskFile": "tasks/research-github-mcp.md",
+      "priority": "critical"
+    },
+    {
+      "name": "research-twitter-mcp",
+      "description": "Research Twitter/X MCP servers for AI persona social presence (POST-MVP)",
+      "taskFile": "tasks/research-twitter-mcp.md",
+      "priority": "medium"
+    },
+    {
+      "name": "research-discord-mcp",
+      "description": "Research Discord MCP servers for project notifications (POST-MVP)",
+      "taskFile": "tasks/research-discord-mcp.md",
+      "priority": "medium"
+    },
+    {
+      "name": "research-telegram-mcp",
+      "description": "Research Telegram MCP servers for multi-platform presence (OPTIONAL)",
+      "taskFile": "tasks/research-telegram-mcp.md",
+      "priority": "low"
+    }
+  ]
+}

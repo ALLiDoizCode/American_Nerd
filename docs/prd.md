@@ -230,11 +230,15 @@ Early token buyers: 10-30x returns
 - System shall auto-merge PRs on QA approval
 - System shall auto-release payment on merge (85% dev, 10% QA, 5% platform)
 
-**FR7: GitHub Integration**
-- AI nodes shall use GitHub API (Octokit) for all code operations
-- System shall create PRs, commit code, auto-merge on approval
+**FR7: GitHub Integration (Fork-Based Workflow)**
+- AI nodes shall use GitHub MCP Server (official) for all GitHub operations
+- AI nodes shall fork client repositories automatically (no collaborator access needed)
+- AI nodes shall work in their own forks (no write access to client repos)
+- System shall create PRs from agent forks to client repositories
 - System shall track PR status on-chain (PullRequest account)
+- System shall auto-merge PRs on QA approval
 - All code deliverables shall be in client's GitHub repository
+- **Security Model:** Trustless - agents never have write access to client code
 
 **FR8: MCP Server for Client Onboarding**
 - System shall provide MCP server exposing 18+ tools for Claude Desktop integration
@@ -277,10 +281,11 @@ Early token buyers: 10-30x returns
 - Creates self-sustaining AI economy (organic network activity)
 
 **FR13: AI Node Runtime & Dependencies**
-- AI nodes shall run on Node.js runtime (v18+)
+- AI nodes shall run on Node.js runtime (v20 LTS)
 - AI nodes shall use `@solana/web3.js` for blockchain interaction
 - AI nodes shall use `@ardrive/turbo-sdk` for Arweave uploads (SOL payment)
-- AI nodes shall use `@octokit/rest` for GitHub API operations
+- AI nodes shall use GitHub MCP Server (official `github/github-mcp-server`) via `@modelcontextprotocol/sdk` for GitHub operations
+- AI nodes shall implement fork-based workflow (fork → work in fork → PR from fork)
 - AI nodes shall use BMAD agent system for context handoffs and agent orchestration
 - System shall distribute nodes as npm package (project name TBD, temporary: `@american-nerd/ai-agent`)
 - AI nodes shall use `@anthropic-ai/sdk` for Claude integration
@@ -375,10 +380,15 @@ AI Persona Nodes (TypeScript/Node.js):
 ├─ @solana/web3.js - Blockchain interaction
 ├─ @anthropic-ai/sdk - Claude Sonnet 4
 ├─ @ardrive/turbo-sdk - Arweave uploads (pay with SOL)
-├─ @octokit/rest - GitHub API
+├─ @modelcontextprotocol/sdk - GitHub MCP client (fork-based workflow)
 ├─ @bmad/md-tree - Auto-sharding
 ├─ Local MCP server - Agent-to-agent workflow
 └─ Deployable anywhere (VPS $10/month, local, cloud)
+
+GitHub MCP Server (Go, official):
+├─ github/github-mcp-server - Fork, commit, PR operations
+├─ Remote hosted by GitHub (zero infrastructure cost)
+└─ Or self-hosted via Docker (optional)
 ```
 
 **Client Interface**
@@ -544,9 +554,9 @@ Creator earnings:
 **Duration:** 4 weeks
 
 - **Story 1.1:** Solana program setup (Anchor project initialization)
-- **Story 1.2:** Core account structures (Project, Opportunity, Bid, Escrow, Work, NodeRegistry)
+- **Story 1.2:** Core account structures (Project, Opportunity, Bid, Work, NodeRegistry)
 - **Story 1.3:** Bidding workflow instructions (create_project, submit_bid, accept_bid)
-- **Story 1.4:** Escrow and payment release (fund_escrow, release_payment)
+- **Story 1.4:** Custom escrow program integration (create_and_fund_escrow, approve_and_distribute, reject_and_refund via CPI)
 - **Story 1.5:** Pyth oracle integration (SOL/USD price feeds)
 - **Story 1.6:** Deploy to devnet + comprehensive testing
 - **Story 1.7:** Deploy to mainnet-beta
@@ -618,7 +628,7 @@ Creator earnings:
 - **Story 6.1:** Auto-sharding system (md-tree integration)
 - **Story 6.2:** Relevant section identification (AI-powered)
 - **Story 6.3:** Context loading (story + architecture sections from Arweave)
-- **Story 6.4:** GitHub integration (clone, branch, commit, PR)
+- **Story 6.4:** GitHub integration (fork-based: fork repo, branch in fork, commit to fork, PR from fork)
 - **Story 6.5:** Code generation (Claude API)
 - **Story 6.6:** QA feedback monitoring (Solana events)
 - **Story 6.7:** Auto-fix iteration (changes requested → fix → resubmit)
@@ -676,8 +686,8 @@ Creator earnings:
 ### Epic 10: Token Launchpad (Milestone 4)
 **Duration:** 4 weeks
 
-- **Story 10.1:** pump.fun SDK integration (or direct contract calls)
-- **Story 10.2:** PumpPortal API integration (buy/sell/collectCreatorFee)
+- **Story 10.1:** PumpPortal API integration (recommended over direct pump.fun SDK)
+- **Story 10.2:** Token trading endpoints (buy/sell/collectCreatorFee)
 - **Story 10.3:** Token creation flow (in MCP)
 - **Story 10.4:** Automatic dev fund sale (20% → escrow)
 - **Story 10.5:** ProjectToken and TokenEscrowaccounts (Solana)
