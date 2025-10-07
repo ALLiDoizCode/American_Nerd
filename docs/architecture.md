@@ -1,6 +1,6 @@
 # American Nerd Marketplace Architecture Document
 
-**Version:** 1.9
+**Version:** 2.0
 **Date:** 2025-10-07
 **Author:** Winston (Architect)
 **Status:** Ready for Implementation
@@ -21,6 +21,7 @@
 | 2025-10-07 | 1.7 | Update escrow architecture: custom program replaces Squads V4 based on comprehensive research | Claude (Research) |
 | 2025-10-07 | 1.8 | Add BMAD + AI SDK integration architecture section with model selection strategy and cost analysis | Claude (Research) |
 | 2025-10-07 | 1.9 | Update BMAD + AI SDK section: WebSocket event architecture (not polling), add complete documentation references | Claude (Research) |
+| 2025-10-07 | 2.0 | **Decentralized Infrastructure Decision**: Add Arweave + Akash Network for user-built project deployment (frontends + backends). Cost: $9 (Arweave) + $390 (Akash) = $399/mo vs. $1,300 centralized. See `docs/decentralized-infrastructure-research.md` | Claude (Research) |
 
 ---
 
@@ -191,8 +192,55 @@ graph TB
 ### Cloud Infrastructure
 
 - **Provider:** Decentralized (Blockchain-Native)
-- **Key Services:** Solana (state management), Arweave (permanent storage), Pyth Network (price oracles)
+- **Key Services:**
+  - **Solana**: State management, smart contracts, event coordination
+  - **Arweave** (via Turbo SDK): Permanent document storage + user-built frontend hosting
+  - **Akash Network**: Decentralized compute for user-built backends + AI worker nodes
+  - **Pyth Network**: SOL/USD price oracles
 - **Deployment Regions:** Global (nodes can run anywhere with internet)
+
+#### User-Built Project Deployment Infrastructure
+
+**Decision:** Use **Arweave + Akash Network** for deploying user-built projects (AI agent outputs)
+
+**Frontend Hosting (Arweave via Turbo SDK):**
+- ✅ Next.js static exports, React/Vue/Svelte SPAs
+- ✅ Permanent, immutable hosting (200+ year guarantee)
+- ✅ One-time cost: ~$0.09 per 10MB deployment
+- ✅ Instant URLs via Arweave gateway (HTTPS included, no DNS setup needed)
+- ✅ Blockchain-native (aligns with Solana + marketplace philosophy)
+- **Cost**: $0.09 per deployment × 100 stories = **$9 total** (node operating expense)
+
+**Backend Hosting (Akash Network):**
+- ✅ Docker-based: Node.js APIs, Python APIs, Rust APIs, databases (PostgreSQL, Redis)
+- ✅ 24/7 AI worker node hosting
+- ✅ 76-83% cheaper than AWS/Railway ($3-5/month vs. $10-15/month per service)
+- ✅ Persistent storage (SSD/NVMe classes available)
+- ✅ Custom domains + SSL via Cloudflare or Caddy
+- ✅ Decentralized, censorship-resistant infrastructure
+- **Cost**: $3/month per backend/AI node (vs. $10-15 centralized)
+
+**Infrastructure/DevOps AI Agent Responsibilities:**
+- Configure GitHub Actions workflows (build, test, deploy)
+- Upload frontend builds to Arweave via Turbo SDK
+- Generate Akash SDL files for backend deployments
+- Deploy backends to Akash Network (provider selection, lease management)
+- Monitor deployment health and post URLs on-chain
+- Handle deployment failures and rollbacks
+
+**Deployment URLs:**
+- **Frontend**: `https://arweave.net/{transaction-id}` (permanent Arweave gateway URL)
+- **Backend**: `https://{provider-hostname}.akash.network` (Akash provider URL)
+- **No custom DNS needed** - direct gateway/provider URLs work immediately
+
+**Why Decentralized Infrastructure:**
+1. **Cost savings**: $9 (Arweave) + $390 (Akash for 50 nodes) = $399/month vs. $1,300 centralized ✅
+2. **Blockchain-native**: Solana + Arweave + Akash = fully decentralized stack
+3. **Permanent hosting**: Arweave frontends never expire (perfect for portfolio showcases)
+4. **No vendor lock-in**: Standard Docker containers (Akash), static files (Arweave)
+5. **Censorship-resistant**: Decentralized infrastructure can't be shut down
+
+**Research**: See `docs/decentralized-infrastructure-research.md` (20K word analysis) and `docs/akash-arweave-decision-brief.md` (executive summary)
 
 ### Technology Stack Table
 
@@ -207,7 +255,8 @@ graph TB
 | **MCP Framework** | fastmcp | latest | MCP server implementation | Lightweight, per PRD requirement, fast setup |
 | **Blockchain SDK** | @solana/web3.js | 1.95.0+ | Solana interaction | Mature, stable, comprehensive |
 | **Anchor Client** | @coral-xyz/anchor | 0.30.0+ | Smart contract interaction from Node.js | Type-safe contract calls, IDL-based |
-| **Storage SDK** | @ardrive/turbo-sdk | latest | Arweave uploads with SOL payment | Turbo network, fast uploads, SOL payment support |
+| **Storage SDK** | @ardrive/turbo-sdk | latest | Arweave uploads with SOL payment | Turbo network, fast uploads, SOL payment support, user frontend hosting |
+| **Compute SDK** | Akash CLI + Custom Wrapper | latest | Decentralized backend/worker deployment | 76-83% cheaper than AWS/Railway, Docker-native, persistent storage |
 | **AI SDK** | ai (Vercel AI SDK) | 5.0+ | Multi-model AI integration (Claude, GPT-4, Ollama) | Unified API for 20+ providers, MCP support, streaming, BMAD-compatible |
 | **AI Providers** | @ai-sdk/anthropic, @ai-sdk/openai, @ai-sdk/ollama | latest | Model providers for Vercel AI SDK | Claude (primary), GPT-4 (fallback), Ollama (local/privacy) |
 | **MCP Client SDK** | @modelcontextprotocol/sdk | 1.19+ | MCP client for tool integration | Official MCP TypeScript SDK, used via Vercel AI SDK wrapper |

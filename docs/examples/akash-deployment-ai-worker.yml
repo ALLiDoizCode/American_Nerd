@@ -1,0 +1,91 @@
+# Akash SDL for AI Worker Node
+# 24/7 Node.js process for autonomous AI development
+#
+# This deploys a SlopMachine AI worker node that:
+# - Runs continuously (24/7)
+# - Calls Claude API for code generation
+# - Manages GitHub repositories
+# - Executes builds and deployments
+# - Reports health status
+#
+# Usage:
+#   akash tx deployment create akash-deployment-ai-worker.yml --from wallet
+
+version: "2.0"
+
+services:
+  worker:
+    # AI worker Node.js container
+    image: ghcr.io/slopmachine/ai-worker-node:latest
+
+    # Environment variables (replace with your secrets)
+    env:
+      - NODE_ENV=production
+      - WORKER_ID=${WORKER_ID}                    # Unique worker identifier
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}          # Anthropic API key
+      - GITHUB_TOKEN=${GITHUB_TOKEN}              # GitHub PAT for repo access
+      - GITHUB_APP_ID=${GITHUB_APP_ID}            # GitHub App ID
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}  # GitHub App private key
+      - SOLANA_PRIVATE_KEY=${SOLANA_PRIVATE_KEY}  # Solana wallet for payments
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}          # Solana RPC endpoint
+      - DATABASE_URL=${DATABASE_URL}              # Connection to main platform DB
+      - REDIS_URL=${REDIS_URL}                    # Redis for job queue
+      - LOG_LEVEL=info
+      - HEALTH_CHECK_PORT=8080
+
+    # Expose health check endpoint
+    expose:
+      - port: 8080
+        as: 80
+        to:
+          - global: true
+        accept:
+          - worker-${WORKER_ID}.slopmachine.fun
+
+    # Persistent workspace for git repos, builds, etc.
+    params:
+      storage:
+        workspace:
+          mount: /workspace
+          readOnly: false
+        cache:
+          mount: /root/.npm
+          readOnly: false
+
+profiles:
+  compute:
+    worker:
+      resources:
+        cpu:
+          units: 500m   # 0.5 vCPU (sufficient for AI API calls + git ops)
+        memory:
+          size: 512Mi   # 512 MB RAM
+        storage:
+          workspace:
+            size: 5Gi   # 5 GB for git repos, node_modules, builds
+            attributes:
+              persistent: true
+              class: beta2  # SSD for faster git/npm operations
+          cache:
+            size: 2Gi   # 2 GB for npm cache
+            attributes:
+              persistent: true
+              class: beta2
+
+  placement:
+    akash:
+      pricing:
+        worker:
+          denom: uakt
+          amount: 500  # ~$3-5/month (adjust based on AKT price)
+
+      # Optional: Prefer providers with good reputation
+      attributes:
+        # region: us-west   # Optional: specify region
+        # tier: community   # Options: community, premium
+
+deployment:
+  worker:
+    akash:
+      profile: worker
+      count: 1  # Single worker instance per deployment

@@ -1,0 +1,142 @@
+name: Deploy Frontend to Arweave
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-arweave.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+env:
+  PROJECT_ID: ${{ github.event.repository.name }}
+  PROJECT_NAME: SlopMachine-${{ github.event.repository.name }}
+
+jobs:
+  deploy-production:
+    name: Deploy to Arweave (Production)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Next.js app (static export)
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://${{ env.PROJECT_ID }}-api.slopmachine.fun
+          NEXT_PUBLIC_PROJECT_ID: ${{ env.PROJECT_ID }}
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "frontend/out" ]; then
+            echo "❌ Build output directory not found"
+            exit 1
+          fi
+          echo "✅ Build output found"
+          du -sh frontend/out
+          find frontend/out -type f | wc -l | xargs echo "Total files:"
+
+      - name: Upload to Arweave via Turbo SDK
+        env:
+          ARWEAVE_WALLET: ${{ secrets.ARWEAVE_WALLET }}
+          PROJECT_NAME: ${{ env.PROJECT_NAME }}
+        run: |
+          npm install -g ts-node @ardrive/turbo-sdk
+          ts-node docs/examples/arweave-turbo-upload.ts frontend/out ${{ env.PROJECT_ID }}
+
+      - name: Generate deployment URLs
+        run: |
+          TX_ID=$(cat arweave-tx-id.txt)
+          echo "ARWEAVE_URL=https://arweave.net/$TX_ID" >> $GITHUB_ENV
+          echo "✅ Permanent URL: https://arweave.net/$TX_ID"
+
+      - name: Update deployment metadata
+        env:
+          API_TOKEN: ${{ secrets.SLOPMACHINE_API_TOKEN }}
+        run: |
+          TX_ID=$(cat arweave-tx-id.txt)
+          DEPLOYMENT_INFO=$(cat arweave-deployment.json)
+
+          curl -X POST https://api.slopmachine.fun/projects/${{ env.PROJECT_ID }}/deployments \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"txId\": \"$TX_ID\",
+              \"url\": \"https://arweave.net/$TX_ID\",
+              \"environment\": \"production\",
+              \"commitSha\": \"${{ github.sha }}\",
+              \"deploymentInfo\": $DEPLOYMENT_INFO
+            }"
+
+      - name: Post deployment summary
+        run: |
+          TX_ID=$(cat arweave-tx-id.txt)
+          DEPLOYMENT_INFO=$(cat arweave-deployment.json)
+          COST=$(echo $DEPLOYMENT_INFO | jq -r '.cost')
+          SIZE_MB=$(echo $DEPLOYMENT_INFO | jq -r '.size / 1024 / 1024 | floor')
+
+          echo "## 🎉 Arweave Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Permanent URL**: https://arweave.net/$TX_ID" >> $GITHUB_STEP_SUMMARY
+          echo "**Transaction ID**: \`$TX_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Size**: ${SIZE_MB} MB" >> $GITHUB_STEP_SUMMARY
+          echo "**Upload Cost**: $COST winc (~\$0.09)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Permanent, decentralized hosting on Arweave (200+ year guarantee)" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 No custom DNS needed - instant HTTPS via Arweave gateway" >> $GITHUB_STEP_SUMMARY
+
+  deploy-staging:
+    name: Deploy to Vercel (Staging)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          scope: slopmachine
+          github-comment: true
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🚀 Staging Preview Deployed!
+
+**Preview URL**: Check Vercel comment above
+
+**Environment**: Staging (Vercel Free Tier)
+**Cost**: $0 (unlimited preview deployments)
+
+⚠️ This is a staging preview. Production deployments use Arweave for permanent hosting.
+              `
+            })

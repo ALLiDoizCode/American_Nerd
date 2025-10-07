@@ -1,0 +1,233 @@
+name: Deploy Backend to Akash Network
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'akash/**'
+      - '.github/workflows/deploy-akash.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  PROJECT_ID: ${{ github.event.repository.name }}
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/backend
+
+jobs:
+  build-and-push:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-akash:
+    name: Deploy to Akash Network
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare environment variables
+        run: |
+          # Generate SDL file with environment-specific values
+          export IMAGE_TAG="${{ needs.build-and-push.outputs.image-tag }}"
+          export CORS_ORIGIN="https://${{ env.PROJECT_ID }}.slopmachine.fun"
+          export DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}"
+          export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+
+          # Substitute environment variables in SDL template
+          envsubst < akash/deployment-template.yml > akash/deployment.yml
+
+          echo "Generated SDL file:"
+          cat akash/deployment.yml
+
+      - name: Deploy to Akash
+        uses: TedcryptoOrg/akash-deploy-action@v1
+        id: akash-deploy
+        with:
+          sdl-file: 'akash/deployment.yml'
+          wallet-mnemonic: ${{ secrets.AKASH_MNEMONIC }}
+          wallet-password: ${{ secrets.AKASH_PASSWORD }}
+          # Optional: specify provider (leave empty for auto-select lowest bid)
+          # provider: ${{ secrets.AKASH_PROVIDER }}
+
+      - name: Get deployment details
+        id: deployment-info
+        run: |
+          # Note: This is a placeholder. Actual deployment info retrieval
+          # depends on the akash-deploy-action output format.
+          # You may need to use Akash CLI to get deployment details.
+
+          DSEQ="${{ steps.akash-deploy.outputs.dseq }}"
+          PROVIDER="${{ steps.akash-deploy.outputs.provider }}"
+
+          echo "dseq=$DSEQ" >> $GITHUB_OUTPUT
+          echo "provider=$PROVIDER" >> $GITHUB_OUTPUT
+
+      - name: Configure DNS (Cloudflare)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          # Get Akash provider hostname
+          # This is a simplified example. Actual implementation would query Akash provider.
+          PROVIDER_HOSTNAME="${{ steps.deployment-info.outputs.provider }}.akash.network"
+          SUBDOMAIN="${{ env.PROJECT_ID }}-api"
+
+          # Check if DNS record exists
+          RECORD_ID=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?name=$SUBDOMAIN.slopmachine.fun" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            | jq -r '.result[0].id // empty')
+
+          if [ -n "$RECORD_ID" ]; then
+            echo "Updating existing DNS record..."
+            curl -X PUT \
+              "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$RECORD_ID" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"type\":\"CNAME\",\"name\":\"$SUBDOMAIN\",\"content\":\"$PROVIDER_HOSTNAME\",\"proxied\":true}"
+          else
+            echo "Creating new DNS record..."
+            curl -X POST \
+              "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"type\":\"CNAME\",\"name\":\"$SUBDOMAIN\",\"content\":\"$PROVIDER_HOSTNAME\",\"proxied\":true}"
+          fi
+
+      - name: Wait for health check
+        run: |
+          CUSTOM_URL="https://${{ env.PROJECT_ID }}-api.slopmachine.fun"
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+
+          echo "Waiting for API to be healthy at $CUSTOM_URL/health"
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            if curl -sf "$CUSTOM_URL/health" > /dev/null; then
+              echo "✅ API is healthy!"
+              exit 0
+            fi
+
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Not ready yet, waiting 10 seconds..."
+            sleep 10
+          done
+
+          echo "❌ API failed to become healthy after $MAX_ATTEMPTS attempts"
+          exit 1
+
+      - name: Update deployment metadata
+        env:
+          API_TOKEN: ${{ secrets.SLOPMACHINE_API_TOKEN }}
+        run: |
+          curl -X POST https://api.slopmachine.fun/projects/${{ env.PROJECT_ID }}/deployments \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"type\": \"backend\",
+              \"environment\": \"production\",
+              \"platform\": \"akash\",
+              \"url\": \"https://${{ env.PROJECT_ID }}-api.slopmachine.fun\",
+              \"dseq\": \"${{ steps.deployment-info.outputs.dseq }}\",
+              \"provider\": \"${{ steps.deployment-info.outputs.provider }}\",
+              \"commitSha\": \"${{ github.sha }}\",
+              \"imageTag\": \"${{ needs.build-and-push.outputs.image-tag }}\"
+            }"
+
+      - name: Post deployment summary
+        run: |
+          echo "## 🎉 Akash Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Production API**: https://${{ env.PROJECT_ID }}-api.slopmachine.fun" >> $GITHUB_STEP_SUMMARY
+          echo "**Provider**: ${{ steps.deployment-info.outputs.provider }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Sequence**: ${{ steps.deployment-info.outputs.dseq }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: ${{ needs.build-and-push.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Decentralized hosting on Akash Network" >> $GITHUB_STEP_SUMMARY
+          echo "💰 Estimated cost: ~$5-8/month (vs. $15-25 Railway)" >> $GITHUB_STEP_SUMMARY
+
+  deploy-staging-railway:
+    name: Deploy to Railway (Staging)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        uses: bervProject/railway-deploy@main
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: ${{ env.PROJECT_ID }}-backend-staging
+
+      - name: Comment PR with staging URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const railwayUrl = 'https://${{ env.PROJECT_ID }}-backend-staging.railway.app';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🚀 Staging API Deployed!
+
+**Staging URL**: ${railwayUrl}
+**Health Check**: ${railwayUrl}/health
+
+**Environment**: Staging (Railway ephemeral)
+**Cost**: ~$0.50/day (auto-deleted on PR close)
+
+⚠️ This is a staging preview. Production deployments use Akash Network for cost savings.
+              `
+            })
