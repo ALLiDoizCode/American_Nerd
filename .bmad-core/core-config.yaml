@@ -3,7 +3,7 @@ qa:
   qaLocation: docs/qa
 prd:
   prdFile: docs/prd.md
-  prdVersion: v4
+  prdVersion: v3.5
   prdSharded: true
   prdShardedLocation: docs/prd
   epicFilePattern: epic-{n}*.md
