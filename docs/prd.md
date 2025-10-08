@@ -1,6 +1,6 @@
-# American Nerd Marketplace PRD v3.2 - Fully Autonomous "Slop or Ship"
+# American Nerd Marketplace PRD v3.3 - Fully Autonomous "Slop or Ship"
 
-**Version:** 3.2 (Economics Validated, Production Ready)
+**Version:** 3.3 (Git Flow + Multi-Environment Deployments)
 **Date:** 2025-10-07
 **Author:** BMad Master Agent + Jonathan Green
 **Status:** Ready for Implementation
@@ -16,6 +16,7 @@
 | 2025-10-07 | v3.0 | **Fully autonomous transformation:** Removed all human validators, added progressive staking system (5x to 2x), reputation tiers, automated validation (tests/builds/deployments), infrastructure/DevOps AI agents, continuous staging deployment, live "slop or ship" tracking for token speculators | BMad Master + Jonathan |
 | 2025-10-07 | v3.1 | **Decentralized Infrastructure:** Replace Vercel/Railway with Arweave (frontends) + Akash Network (backends). AI nodes pay deployment costs ($0.09/frontend, $3/month/backend). See `docs/decentralized-infrastructure-research.md` | Claude (Research) |
 | 2025-10-07 | v3.2 | **Economics Validated:** Comprehensive AI infrastructure economics research validates marketplace viability. Story pricing: $2.50 minimum (smart contract enforced), $3-7 expected range. Staking adjusted: Tier 3-4 increased to 2x for economic security (was 1.5x/1.2x). Node operator profitability: 83-99% margins across all infrastructure types. See `docs/ai-infrastructure-economics-research.md` | Claude (Economics Research) |
+| 2025-10-07 | v3.3 | **Git Flow + Multi-Environment Deployments:** Implement realistic Git branching strategy with 3-tier deployment pipeline (development/staging/production). Add Epic data model for epic-level integration tracking. Story deploys to development branch → Arweave. Epic completion triggers staging branch merge → Arweave. Project completion triggers main branch merge → Arweave (production). 3x Akash backend environments ($9/month total). Corrected Arweave costs: $4.59/project (was $10.80). Token holders see development/staging/production URLs for full transparency. See Architecture v2.4 for complete Git Flow implementation. | BMad Master + Claude |
 
 ---
 
@@ -569,8 +570,12 @@ Net profit: $1.75 - $0.013 = $1.74
 
 **NFR2: Cost**
 - Arweave document storage shall cost <$0.02 per project (via Turbo SDK)
-- Arweave frontend hosting shall cost ~$0.09 per 10MB deployment (node operating expense)
-- Akash backend hosting shall cost ~$3-5/month per service (76-83% cheaper than AWS/Railway)
+- Arweave frontend hosting (3-tier deployment):
+  - Story deployments (development branch): ~$0.09 × 40 stories = $3.60
+  - Epic deployments (staging branch): ~$0.09 × 10 epics = $0.90
+  - Production deployment (main branch): ~$0.09 × 1 = $0.09
+  - **Total per project**: ~$4.59 (one-time, permanent hosting)
+- Akash backend hosting (3 environments): $3/month × 3 = $9/month per project (dev/staging/prod)
 - Solana transaction fees shall cost <$0.10 per project
 - Total blockchain costs shall be <$0.15 per project
 - Claude API costs borne by node operators (~$2-5 per task)
@@ -603,27 +608,29 @@ Net profit: $1.75 - $0.013 = $1.74
 **Blockchain Layer (Solana)**
 ```
 Smart Contracts (Anchor):
-├─ Project (client, prd_arweave_tx, github_repo, status)
+├─ Project (client, prd_arweave_tx, github_repo, status, development_url, staging_url, production_url, epic_count, completed_epics)
+├─ Epic (project, epic_number, title, story_count, completed_stories, staging_url, status) // NEW v3.3
 ├─ Opportunity (project, work_type, budget_range, requirements_tx, max_tier_allowed)
 ├─ Bid (opportunity, node, amount_sol, stake_amount, tier, usd_equivalent, sol_price_at_bid)
 ├─ StakeEscrow (stake_amount, bid_amount, node, status, slash_count)
 ├─ Escrow (funds, node, platform_fee, status)
 ├─ Work (deliverable_arweave_tx, github_commit_sha, staging_url, validation_status)
-├─ Story (project, github_pr, context_refs, status, staging_url, iteration_count)
-├─ PullRequest (story, pr_number, head_sha, status)
+├─ Story (project, epic_id, github_pr, context_refs, status, staging_url, deployment_count, iteration_count)
+├─ PullRequest (story, pr_number, head_sha, target_branch, status)
 ├─ AutomatedValidation (pr, checks_passed, checks_failed, validation_details)
 ├─ NodeRegistry (wallet, persona_name, social_handle, reputation_tier, projects_completed, badges)
 ├─ ProjectToken (pump_fun_mint, dev_budget, status) // M4
 └─ TokenDevelopmentEscrow (budget, spent, remaining) // M4
 
 Instructions:
-├─ create_project, create_opportunity, submit_bid_with_stake, accept_bid
+├─ create_project, create_epic, create_opportunity, submit_bid_with_stake, accept_bid
 ├─ fund_escrow, submit_work, submit_validation_result, release_payment_and_stake
 ├─ slash_stake, increment_reputation, check_tier_eligibility
 ├─ create_story, start_work, submit_pr, submit_validation_results, finalize_story
+├─ post_story_deployment, complete_epic, post_epic_deployment, post_production_deployment
 ├─ link_twitter, grant_badge, update_social_stats
 ├─ initialize_token_funding, fund_opportunity_from_token
-└─ update_project_milestone, post_staging_url
+└─ update_project_milestone
 ```
 
 **Storage Layer**
@@ -846,11 +853,56 @@ Creator earnings:
 
 **Critical Dependency:** This epic creates the automated validation infrastructure that ALL subsequent stories depend on.
 
-**Key Principle:** Story 0.1 (Architecture) MUST complete first because it defines the complete tech stack that all other infrastructure stories depend on.
+**Key Principle:** Story 0.0 (Git Setup) creates branching strategy. Story 0.1 (Architecture) defines complete tech stack. Both are foundational for all other stories.
 
 ---
 
-#### **Story 0.1: Architecture Generation** ⭐ **FOUNDATION - MUST COMPLETE FIRST**
+#### **Story 0.0: Git Repository & Branch Setup** ⭐ **FOUNDATION - MUST COMPLETE FIRST**
+
+**Why First:** Establishes Git Flow branching strategy for 3-tier deployments (development/staging/production).
+
+**Infrastructure AI Responsibilities:**
+- Fork client repository (fork-based workflow for security)
+- Create 3 long-lived branches:
+  ```
+  main (production - protected)
+    ↑
+  staging (epic integration - protected)
+    ↑
+  development (story integration - protected)
+  ```
+- Configure branch protection rules:
+  - `main`: Require PR from `staging`, require status checks, no direct pushes
+  - `staging`: Require PR from `development`, require status checks
+  - `development`: Require PR from feature branches, require status checks
+- Create `.gitignore` appropriate for project type
+- Initialize README.md with project info
+- Set default branch to `development`
+
+**Branch Strategy Documentation:**
+```markdown
+# Branch Strategy
+
+- **main**: Production deployments only (Arweave permanent URL)
+- **staging**: Epic integration testing (Arweave epic URL)
+- **development**: Story integration (Arweave story URLs)
+- **feature/story-{id}**: Individual story work
+
+## Deployment Flow
+Story complete → development → Arweave (dev URL)
+Epic complete → staging → Arweave (staging URL)
+Project complete → main → Arweave (production URL)
+```
+
+**Payment Trigger:**
+- Repository forked successfully
+- 3 branches created (development, staging, main)
+- Branch protection rules configured
+- On-chain confirmation of repository setup
+
+---
+
+#### **Story 0.1: Architecture Generation** ⭐ **FOUNDATION - MUST COMPLETE SECOND**
 
 **Why First:** Architecture.md is the source of truth that tells infrastructure agents WHAT to build and HOW to validate it.
 
@@ -1118,11 +1170,16 @@ jobs:
 ---
 
 **Epic 0 Success Criteria:**
+✅ Git repository forked with 3-tier branch strategy (development/staging/main)
+✅ Branch protection rules configured (PRs required, status checks enforced)
 ✅ Architecture.md exists on Arweave (defines COMPLETE tech stack)
 ✅ Test infrastructure matches project type (not one-size-fits-all)
 ✅ CI/CD runs validation commands from architecture.validation_strategy
-✅ Deployment works for project type (CLI → releases, Web → staging URL, API → endpoint)
-✅ Staging URLs accessible (for web apps): `{project-slug}.slopmachine.fun`
+✅ Deployment works for all 3 environments:
+   - Development: Story merges → development branch → Arweave deployment
+   - Staging: Epic complete → staging branch → Arweave deployment
+   - Production: Project complete → main branch → Arweave deployment
+✅ Deployment URLs use direct Arweave/Akash URLs (e.g., `https://arweave.net/{tx-id}`)
 ✅ Test suite PROVEN to catch failures
 ✅ Validation results posted to Solana via webhook
 ✅ **Infrastructure adapts to ANY project type** (Rust CLI, Next.js app, Python API, etc.)

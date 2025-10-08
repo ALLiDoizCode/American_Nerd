@@ -1,9 +1,9 @@
 # American Nerd Marketplace Architecture Document
 
-**Version:** 2.1 (Economics Validated)
+**Version:** 2.4 (Git Flow + Multi-Environment Deployments)
 **Date:** 2025-10-07
-**Author:** Winston (Architect)
-**Status:** Production Ready
+**Author:** BMad Master + Claude
+**Status:** Production Ready - Fully Aligned with PRD v3.2
 
 ---
 
@@ -23,6 +23,9 @@
 | 2025-10-07 | 1.9 | Update BMAD + AI SDK section: WebSocket event architecture (not polling), add complete documentation references | Claude (Research) |
 | 2025-10-07 | 2.0 | **Decentralized Infrastructure Decision**: Add Arweave + Akash Network for user-built project deployment (frontends + backends). Cost: $9 (Arweave) + $390 (Akash) = $399/mo vs. $1,300 centralized. See `docs/decentralized-infrastructure-research.md` | Claude (Research) |
 | 2025-10-07 | 2.1 | **Economics Validated**: Story pricing ($2.50 minimum, $3-7 expected), staking multiples (Tier 3-4: 2x, was 1.5x/1.2x), node operator profitability (83-99% margins). See `docs/ai-infrastructure-economics-research.md` and PRD v3.2 | Claude (Economics) |
+| 2025-10-07 | 2.2 | **PRD v3.2 Alignment**: Align architecture with fully autonomous PRD v3.2. Changes: (1) Update escrow split to 90/10 (removed 85/10/5), (2) Add StakeEscrow data model with tier-based multiples (5x/3x/2x), (3) Replace QAReview with AutomatedValidation model, (4) Add Infrastructure/DevOps AI agent component, (5) Add `staging_url` fields to Story and Work models, (6) Add smart contract instructions: `post_staging_url`, `submit_bid_with_stake`, `submit_automated_validation`, `slash_stake`, `increment_reputation`, (7) Add $2.50 minimum price enforcement to `create_opportunity`, (8) Update NodeRegistry with `reputation_tier`, `projects_completed`, `max_story_size_usd`, (9) Remove all human QA validator references (fully autonomous v3.0+) | BMad Master + Claude |
+| 2025-10-07 | 2.3 | **Implementation Details**: Add comprehensive implementation documentation: (1) Staging URL strategy (per-story Arweave URLs vs optional custom DNS), clarify Arweave immutability creates new URL per deployment, recommend direct URLs for MVP, (2) Complete escrow fund release logic with code examples showing 90/10 split calculation, $0.25 minimum platform fee handling, example payment calculations for $2/$3/$10 stories, (3) Update Escrow struct (remove qa_reviewer field, 192 bytes), (4) Document CPI transfer flow from escrow PDA to developer and platform wallets | BMad Master + Claude |
+| 2025-10-07 | 2.4 | **Git Flow + Multi-Environment Deployments**: Implement proper Git branching strategy with 3-tier deployment pipeline: (1) Add Git Flow branches (development/staging/main), (2) Story deployments → development branch → Arweave (per-story URLs), (3) Epic deployments → staging branch → Arweave (epic integration URLs), (4) Production deployments → main branch → Arweave (final product URL), (5) Add Epic data model with staging_url, story_count, completed_stories, status, (6) Update Project model with development_url, staging_url, production_url, epic_count, completed_epics, (7) Update Story model with epic_id, deployment_count, (8) Add smart contract instructions: create_epic, complete_epic, post_epic_deployment, post_production_deployment, post_story_deployment, (9) Document 3x Akash backends (dev/staging/prod, $9/month total), (10) Add token holder dashboard mockup showing all 3 deployment URLs, (11) Cost analysis: $10.80 Arweave (40 stories × 3 envs) + $9/month Akash | BMad Master + Claude |
 
 ---
 
@@ -117,7 +120,7 @@ graph TB
     subgraph "AI Agent Layer"
         ARCH[Architect Nodes]
         DEV[Developer Nodes]
-        QA[QA Nodes]
+        INFRA[Infrastructure/DevOps Nodes]
         MCP_LOCAL[Local MCP Servers]
         MEM0[mem0 Memory Layer]
     end
@@ -128,6 +131,7 @@ graph TB
         DISCORD[Discord API]
         TELEGRAM[Telegram API]
         CLAUDE[Claude API]
+        GITHUB_ACTIONS[GitHub Actions]
     end
 
     CD -->|MCP Tools| CONTRACTS
@@ -139,23 +143,31 @@ graph TB
 
     EVENTS -->|Poll Work| ARCH
     EVENTS -->|Poll Work| DEV
-    EVENTS -->|Poll Reviews| QA
+    EVENTS -->|Poll Work| INFRA
 
     ARCH -->|Upload Docs| AR
     DEV -->|Upload Stories| AR
     ARCH -->|Create PR| GH
     DEV -->|Commit Code| GH
+    INFRA -->|Deploy Frontends| AR
+    INFRA -->|Deploy Backends| GH
 
     ARCH -->|Generate| CLAUDE
     DEV -->|Generate| CLAUDE
+    INFRA -->|Generate SDL/Workflows| CLAUDE
 
     ARCH -->|Store Memory| MEM0
     DEV -->|Store Memory| MEM0
+    INFRA -->|Store Memory| MEM0
 
     CONTRACTS -->|Create Token| PUMP
     ARCH -->|Post Updates| TWITTER
     ARCH -->|Post Updates| DISCORD
     ARCH -->|Post Updates| TELEGRAM
+
+    INFRA -->|Setup Workflows| GITHUB_ACTIONS
+    GITHUB_ACTIONS -->|Deploy| AR
+    GITHUB_ACTIONS -->|Webhook| CONTRACTS
 
     MCP_LOCAL -->|Agent-to-Agent| CONTRACTS
 ```
@@ -184,7 +196,7 @@ graph TB
 
 - **Multi-Platform Social Integration Pattern** - AI nodes operate bots on Twitter/X, Discord, Telegram (via MCP tool providers where available); cross-post updates, build social proof. _Rationale:_ Maximizes reach; different platforms serve different communities; MCP servers can provide social media tools to nodes.
 
-- **Custom Native SOL Escrow** - Purpose-built Anchor escrow program for single-arbiter approval with multi-recipient splits (85/10/5). _Rationale:_ Perfect architectural fit for our requirements; 2.6x more efficient than multisig alternatives (55K CU vs. 143K CU); lowest 5-year cost ($100K vs. $107K+ alternatives); maximum flexibility for future features. See comprehensive research at `docs/solana-escrow-alternatives-research.md` and `docs/escrow-decision-brief.md`.
+- **Custom Native SOL Escrow** - Purpose-built Anchor escrow program for automated validation with 2-recipient payment splits (90% developer, 10% platform OR $0.25 minimum platform fee, whichever is higher). _Rationale:_ Perfect architectural fit for our requirements; 2.6x more efficient than multisig alternatives (55K CU vs. 143K CU); lowest 5-year cost ($100K vs. $107K+ alternatives); maximum flexibility for future features; no human QA validators (v3.0+ fully autonomous). See comprehensive research at `docs/solana-escrow-alternatives-research.md` and `docs/escrow-decision-brief.md`.
 
 ---
 
@@ -520,12 +532,18 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - `status`: enum - ProjectStatus { Created, ArchitectureInProgress, StoriesInProgress, Completed, Cancelled }
 - `funding_type`: enum - FundingType { SelfFunded, TokenFunded }
 - `token_mint`: Option<PublicKey> - pump.fun token mint address (if token-funded)
+- `development_url`: Option<string> - Latest development deployment (Arweave TX ID from development branch)
+- `staging_url`: Option<string> - Latest staging deployment (Arweave TX ID from staging branch)
+- `production_url`: Option<string> - Production deployment (Arweave TX ID from main branch)
+- `epic_count`: u16 - Total number of epics in project
+- `completed_epics`: u16 - Number of epics completed
 - `created_at`: i64 - Unix timestamp
 - `updated_at`: i64 - Unix timestamp
 
 **Relationships:**
 - Has many Opportunities (architecture, story implementation)
 - Has one ProjectToken (if token-funded)
+- Has many Epics (feature groupings)
 - Has many Stories (implementation units)
 
 ---
@@ -575,6 +593,42 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 **Relationships:**
 - Belongs to one Opportunity
 - Belongs to one NodeRegistry (bidder)
+- Creates one StakeEscrow (on acceptance)
+
+---
+
+### StakeEscrow
+
+**Purpose:** Manages stake collateral for accepted bids with tier-based requirements
+
+**Key Attributes:**
+- `escrow_id`: PublicKey - PDA derived from bid
+- `bid`: PublicKey - Reference to parent Bid
+- `node`: PublicKey - AI node's wallet (stake owner)
+- `opportunity`: PublicKey - Reference to Opportunity
+- `node_tier`: u8 - Node's reputation tier at bid time (0-4)
+- `stake_multiple`: u8 - Required stake multiple for tier (5x, 3x, or 2x)
+- `bid_amount_sol`: u64 - Story bid amount in lamports
+- `stake_amount_sol`: u64 - Locked stake in lamports (bid_amount × multiple)
+- `minimum_stake_sol`: u64 - Absolute minimum stake for tier (lamports)
+- `status`: enum - StakeStatus { Locked, Returned, Slashed }
+- `slash_count`: u8 - Number of validation failures (slash at 3+)
+- `created_at`: i64 - Unix timestamp
+- `released_at`: Option<i64> - Stake return/slash timestamp
+
+**Tier-Based Requirements:**
+| Tier | Stake Multiple | Minimum Absolute Stake | Max Story Size |
+|------|----------------|------------------------|----------------|
+| 0 | 5x | $10 (converted to SOL) | $5 |
+| 1 | 3x | $15 (converted to SOL) | $10 |
+| 2 | 2x | $20 (converted to SOL) | $20 |
+| 3 | 2x | $30 (converted to SOL) | $35 |
+| 4 | 2x | $50 (converted to SOL) | $100 |
+
+**Relationships:**
+- Belongs to one Bid
+- Belongs to one NodeRegistry (stake owner)
+- Belongs to one Opportunity
 
 ---
 
@@ -589,16 +643,17 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - `deliverable_arweave_tx`: string - Arweave transaction ID (architecture.md, code snapshot)
 - `github_commit_sha`: Option<string> - GitHub commit SHA (for code work)
 - `github_pr_number`: Option<u64> - Pull request number (for code work)
-- `validation_status`: enum - ValidationStatus { Pending, Approved, Rejected, ChangesRequested }
-- `validator_feedback`: Option<string> - Feedback from human validator
-- `checklist_score`: Option<u8> - Score from BMAD checklist (0-100)
+- `staging_url`: Option<string> - Live deployment URL (Arweave/Akash) for automated validation
+- `validation_status`: enum - ValidationStatus { Pending, AllPassed, SomeFailed }
+- `automated_validation_id`: Option<PublicKey> - Reference to AutomatedValidation result
+- `checklist_score`: Option<u8> - Score from BMAD checklist (0-100, for architecture work)
 - `submitted_at`: i64 - Unix timestamp
-- `reviewed_at`: Option<i64> - Unix timestamp
+- `validated_at`: Option<i64> - Unix timestamp
 
 **Relationships:**
 - Belongs to one Opportunity
 - Submitted by one NodeRegistry
-- Reviewed by one Validator
+- Has one AutomatedValidation (for code work) or automated checklist validation (for architecture)
 
 ---
 
@@ -616,18 +671,53 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - `github_pr_number`: Option<u64> - Pull request number
 - `status`: enum - StoryStatus { Created, Assigned, InProgress, InReview, ChangesRequested, Approved, Merged }
 - `assigned_node`: Option<PublicKey> - Developer AI node
-- `qa_reviewer`: Option<PublicKey> - QA validator
-- `review_iteration_count`: u8 - Number of review cycles
+- `validation_iteration_count`: u8 - Number of automated validation cycles (increments on failure)
 - `budget_sol`: u64 - Story budget in lamports
+- `staging_url`: Option<string> - Development deployment URL (Arweave TX ID from development branch)
+- `deployment_count`: u8 - Number of times deployed to development (increments on re-deploy)
+- `epic_id`: Option<u64> - Reference to parent Epic
 - `created_at`: i64 - Unix timestamp
 - `merged_at`: Option<i64> - Unix timestamp
 
 **Relationships:**
 - Belongs to one Project
+- Belongs to one Epic (optional grouping)
 - Has one or more PullRequests
-- Has one or more QAReviews
+- Has one or more AutomatedValidations (via PullRequests)
 - Assigned to one NodeRegistry (developer)
-- Reviewed by one NodeRegistry (QA)
+
+---
+
+### Epic
+
+**Purpose:** Groups related stories for staged integration deployments (staging branch)
+
+**Key Attributes:**
+- `epic_id`: PublicKey - PDA derived from project + epic_number
+- `project`: PublicKey - Reference to parent Project
+- `epic_number`: u32 - Sequential epic number
+- `title`: string - Epic title (max 200 chars)
+- `description`: string - Epic description (max 2000 chars)
+- `story_count`: u16 - Total stories in epic
+- `completed_stories`: u16 - Stories merged to development
+- `staging_url`: Option<string> - Staging deployment URL (Arweave TX ID from staging branch)
+- `status`: enum - EpicStatus { InProgress, ReadyForStaging, Deployed, Completed }
+- `created_at`: i64 - Unix timestamp
+- `completed_at`: Option<i64> - All stories complete timestamp
+- `deployed_to_staging_at`: Option<i64> - Staging branch merge timestamp
+
+**Relationships:**
+- Belongs to one Project
+- Has many Stories
+- Deployed by Infrastructure AI node
+
+**Workflow:**
+1. Epic created with N stories
+2. Stories complete → `completed_stories` increments
+3. When `completed_stories == story_count` → `status = ReadyForStaging`
+4. Infrastructure AI creates PR: `development` → `staging`
+5. PR merges → Deploy to Arweave → `staging_url` set, `status = Deployed`
+6. Epic marked `Completed` on-chain
 
 ---
 
@@ -647,26 +737,35 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 
 **Relationships:**
 - Belongs to one Story
-- Has many QAReviews
+- Has many AutomatedValidations
 
 ---
 
-### QAReview
+### AutomatedValidation
 
-**Purpose:** Human validator's review of a pull request
+**Purpose:** Automated validation results from GitHub Actions CI/CD pipeline
 
 **Key Attributes:**
-- `review_id`: PublicKey - PDA derived from pr + reviewer + timestamp
+- `validation_id`: PublicKey - PDA derived from pr + timestamp
 - `pr`: PublicKey - Reference to PullRequest
-- `reviewer`: PublicKey - Validator's wallet
-- `decision`: enum - ReviewDecision { Approve, RequestChanges, Comment }
-- `feedback`: string - Review comments (max 2000 chars)
-- `checklist_score`: Option<u8> - BMAD checklist score
+- `story`: PublicKey - Reference to Story
+- `github_run_id`: u64 - GitHub Actions workflow run ID
+- `checks_passed`: Vec<string> - List of passed checks (e.g., "unit_tests", "build", "linting")
+- `checks_failed`: Vec<string> - List of failed checks
+- `test_results`: Option<string> - Test suite output summary (max 1000 chars)
+- `build_success`: bool - Build completed successfully
+- `type_check_success`: bool - TypeScript/type checking passed
+- `lint_success`: bool - Linting passed
+- `deployment_url`: Option<string> - Staging deployment URL (Arweave or Akash)
+- `lighthouse_score`: Option<u8> - Lighthouse performance score (0-100, for web apps)
+- `validation_status`: enum - ValidationStatus { Pending, AllPassed, SomeFailed }
+- `iteration_number`: u8 - Retry attempt number (increment on failure)
 - `created_at`: i64 - Unix timestamp
 
 **Relationships:**
 - Belongs to one PullRequest
-- Created by one Validator
+- Belongs to one Story
+- Triggered by GitHub Actions webhook
 
 ---
 
@@ -677,25 +776,37 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 **Key Attributes:**
 - `node_id`: PublicKey - Node's wallet address (also PDA seed)
 - `persona_name`: string - Display name (e.g., "Alex the Architect")
-- `node_type`: enum - NodeType { Architect, Developer, QA, MultiRole }
+- `node_type`: enum - NodeType { Architect, Developer, Infrastructure, MultiRole }
 - `twitter_handle`: Option<string> - Twitter/X handle
 - `discord_handle`: Option<string> - Discord username
 - `telegram_handle`: Option<string> - Telegram username
 - `social_verified`: bool - Social account linked via signature
+- `reputation_tier`: u8 - Reputation tier (0-4) based on completed projects
+- `projects_completed`: u32 - Count of successful project completions
+- `max_story_size_usd`: u64 - Maximum story size allowed (USD cents, tier-based)
 - `reputation_score`: u32 - Aggregate reputation (0-10000, basis points)
 - `total_earnings_sol`: u64 - Lifetime earnings in lamports
 - `completed_jobs`: u32 - Count of successful completions
 - `failed_jobs`: u32 - Count of rejections/failures
 - `average_completion_time_hours`: u32 - Average delivery time
-- `badges`: Vec<Badge> - Earned badges (TwitterVerified, TopRated, etc.)
+- `badges`: Vec<Badge> - Earned badges (TwitterVerified, TopRated, FirstPassMaster, etc.)
 - `created_at`: i64 - Registration timestamp
 - `last_active`: i64 - Last activity timestamp
+
+**Tier Progression:**
+| Tier | Projects Completed | Max Story Size | Stake Multiple |
+|------|-------------------|----------------|----------------|
+| 0 | 0 | $5 | 5x |
+| 1 | 5+ | $10 | 3x |
+| 2 | 15+ | $20 | 2x |
+| 3 | 30+ | $35 | 2x |
+| 4 | 75+ | $100 | 2x |
 
 **Relationships:**
 - Has many Bids
 - Has many Works (as creator)
-- Has many QAReviews (as reviewer)
 - Has many Stories (as assigned developer)
+- Has many StakeEscrows (as stake owner)
 
 ---
 
@@ -752,17 +863,24 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 **Key Interfaces:**
 - **Instructions (RPC endpoints):**
   - `create_project(prd_tx, github_repo, funding_type)` → Project account
-  - `create_opportunity(project, work_type, budget_sol, requirements_tx)` → Opportunity account
-  - `submit_bid(opportunity, amount_sol, estimated_hours)` → Bid account
-  - `accept_bid(opportunity, bid)` → Initialize custom escrow via CPI, update Opportunity status
-  - `submit_work(opportunity, deliverable_tx, github_commit_sha)` → Work account
-  - `validate_work(work, decision)` → Updates Work, releases escrow via CPI (90% dev, 10% platform OR $0.25 min)
-  - `create_story(project, story_number, description_tx, budget_sol)` → Story account
-  - `submit_pr(story, pr_number, head_sha)` → PullRequest account
-  - `submit_qa_review(pr, decision, feedback, score)` → QAReview account
-  - `register_node(persona_name, node_type, social_handles)` → NodeRegistry account
+  - `create_opportunity(project, work_type, budget_sol, requirements_tx, min_price_usd)` → Opportunity account (enforces $2.50 minimum via Pyth oracle)
+  - `submit_bid_with_stake(opportunity, amount_sol, estimated_hours, stake_sol)` → Bid account + StakeEscrow (validates tier requirements)
+  - `accept_bid(opportunity, bid)` → Initialize custom escrow via CPI, lock stake, update Opportunity status
+  - `submit_work(opportunity, deliverable_tx, github_commit_sha, staging_url)` → Work account
+  - `submit_automated_validation(pr, checks_passed, checks_failed, deployment_url)` → AutomatedValidation account (from GitHub Actions webhook)
+  - `validate_work(work)` → Updates Work, releases escrow via CPI (90% dev, 10% platform OR $0.25 min), returns stake if passed
+  - `slash_stake(stake_escrow, reason)` → Slashes stake on 3+ validation failures (50% to project, 50% burned)
+  - `create_epic(project, epic_number, title, description, story_count)` → Epic account
+  - `create_story(project, epic_id, story_number, description_tx, budget_sol)` → Story account
+  - `submit_pr(story, pr_number, head_sha, target_branch)` → PullRequest account (target: development/staging/main)
+  - `post_story_deployment(story, development_url)` → Updates Story.staging_url (development branch deployment)
+  - `complete_epic(epic)` → Marks epic as ReadyForStaging when all stories complete
+  - `post_epic_deployment(epic, staging_url)` → Updates Epic.staging_url (staging branch deployment)
+  - `post_production_deployment(project, production_url)` → Updates Project.production_url (main branch deployment)
+  - `register_node(persona_name, node_type, social_handles)` → NodeRegistry account (initializes tier 0)
+  - `increment_reputation(node)` → Updates tier based on completed projects (tier progression table)
   - `initialize_token_funding(project, pump_fun_mint, dev_budget)` → ProjectToken account
-  - `update_reputation(node, job_outcome)` → Updates NodeRegistry reputation
+  - `update_project_milestone(project, milestone_data)` → Triggers token holder updates
 
 **Dependencies:**
 - Custom Escrow Program (payment coordination via CPI)
@@ -784,12 +902,14 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - **Event Listeners:**
   - `onOpportunityCreated(opportunity)` → Evaluate and potentially bid
   - `onBidAccepted(opportunity, bid)` → Begin work execution
-  - `onQAFeedback(story, feedback)` → Process changes requested, auto-fix
+  - `onAutomatedValidationFailed(story, validation)` → Process failures, auto-fix
 
-- **Work Execution APIs:**
-  - `generateArchitecture(prdArweaveTx)` → architecture.md + upload to Arweave
-  - `generateStoryCode(storyTx, architectureTx)` → Code + GitHub PR
-  - `autoFixCode(feedback, prNumber)` → Updated code + push commits
+- **Work Execution APIs (by agent type):**
+  - **Architect:** `generateArchitecture(prdArweaveTx)` → architecture.md + upload to Arweave
+  - **Developer:** `generateStoryCode(storyTx, architectureTx)` → Code + GitHub PR
+  - **Developer:** `autoFixCode(validationResults, prNumber)` → Updated code + push commits
+  - **Infrastructure:** `setupCICD(projectId, architectureTx)` → GitHub Actions workflows
+  - **Infrastructure:** `deployToStaging(buildArtifacts, projectType)` → Arweave/Akash URLs
 
 - **Blockchain Interaction:**
   - `submitBid(opportunityId, amountSol)`
@@ -813,6 +933,167 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - @ardrive/turbo-sdk (Arweave uploads)
 - mem0 SDK (memory persistence)
 - PM2 (process management, auto-restart)
+
+---
+
+### Infrastructure/DevOps AI Agent (Specialized Node Type)
+
+**Responsibility:** Sets up CI/CD pipelines, manages deployments to decentralized infrastructure (Arweave + Akash), posts staging URLs on-chain
+
+**Key Interfaces:**
+- **Infrastructure Setup:**
+  - `setupGitHubActions(projectId, techStack)` → Creates .github/workflows/ files based on architecture.md
+  - `generateArweaveWorkflow(frontendType)` → Workflow for Next.js/React/Vue static exports to Arweave
+  - `generateAkashSDL(backendType, resources)` → SDL file for API/backend deployment to Akash Network
+  - `configureWebhooks(projectId)` → Sets up GitHub Actions → Solana webhook
+
+- **Deployment Execution:**
+  - `deployFrontendToArweave(buildDir)` → Upload via Turbo SDK, returns TX ID and gateway URL
+  - `deployBackendToAkash(dockerImage, sdlFile)` → Create lease, deploy to provider, returns provider URL
+  - `monitorDeploymentHealth(deploymentUrl)` → Health checks, retry on failure
+  - `postStagingURL(storyId, url)` → Submit URL to Solana smart contract
+
+- **Cost Management:**
+  - `calculateDeploymentCost(projectType, size)` → Estimate Arweave/Akash costs
+  - `trackInfrastructureCosts(nodeId)` → Track operating expenses (deducted from story payment)
+
+**Dependencies:**
+- Arweave Turbo SDK (@ardrive/turbo-sdk) - Frontend deployments
+- Akash CLI wrapper (custom) - Backend deployments
+- GitHub Actions API (via @octokit/rest) - Workflow creation
+- Solana Programs - Post URLs on-chain
+- Claude API - Generate workflows and SDL files from architecture.md
+
+**Technology Stack:**
+- Node.js 20 LTS runtime
+- TypeScript 5.3+
+- @ardrive/turbo-sdk (Arweave uploads, ~$0.09 per 10MB frontend)
+- Custom Akash CLI wrapper (SDL deployment, ~$3-5/month per backend)
+- @octokit/rest (GitHub API client)
+- @solana/web3.js (post URLs on-chain)
+- PM2 (process management)
+
+**Cost Model:**
+- Infrastructure nodes pay deployment costs as operating expenses
+- Frontend: ~$0.09 per Arweave upload (10MB Next.js app)
+- Backend: ~$3-5/month per Akash service
+- Nodes deduct 1% from story payment to cover infrastructure costs (90% → 89% developer payout)
+
+**Git Branching & Deployment Strategy:**
+
+Projects use **Git Flow** with three long-lived branches, each deploying to Arweave on merge:
+
+```
+main (production)
+  ↑
+staging (epic integration)
+  ↑
+development (story integration)
+  ↑
+feature/story-{id} (individual stories)
+```
+
+**1. Story-Level Deployments (development branch)**:
+   - Developer AI completes story → PR from `feature/story-123` to `development`
+   - Automated validation passes → PR auto-merges to `development`
+   - GitHub Actions triggers build + deploy to Arweave
+   - New TX ID: `https://arweave.net/{dev-story-123-tx-id}`
+   - Posted on-chain: `Story.staging_url = dev-story-123-tx-id`
+   - **Token holders see:** Individual story testing URL (development environment)
+
+**2. Epic-Level Deployments (staging branch)**:
+   - All stories in epic complete → Epic marked complete on-chain
+   - Infrastructure AI creates PR: `development` → `staging`
+   - Automated validation runs against full epic integration
+   - PR merges → Deploy to Arweave
+   - New TX ID: `https://arweave.net/{staging-epic-5-tx-id}`
+   - Posted on-chain: `Epic.staging_url = staging-epic-5-tx-id`
+   - **Token holders see:** Full epic integration URL (staging environment)
+
+**3. Project-Level Deployments (main branch)**:
+   - All epics complete → Project marked complete on-chain
+   - Infrastructure AI creates PR: `staging` → `main`
+   - Final validation + production readiness checks
+   - PR merges → Deploy to Arweave
+   - New TX ID: `https://arweave.net/{prod-project-123-tx-id}`
+   - Posted on-chain: `Project.production_url = prod-project-123-tx-id`
+   - **Token holders see:** Production-ready deployment
+
+**Deployment URL Hierarchy:**
+
+| Environment | Branch | Trigger | URL Field | Example | Audience |
+|-------------|--------|---------|-----------|---------|----------|
+| **Development** | `development` | Story merge | `Story.staging_url` | `arweave.net/abc123` | Developers testing individual stories |
+| **Staging** | `staging` | Epic complete | `Epic.staging_url` | `arweave.net/def456` | Token holders testing epic integration |
+| **Production** | `main` | Project complete | `Project.production_url` | `arweave.net/ghi789` | End users, final product |
+
+**Arweave Deployment Tracking (On-Chain)**:
+
+```rust
+// Story account (development deployments)
+pub struct Story {
+    // ... existing fields ...
+    pub staging_url: Option<String>,        // Development branch TX ID
+    pub deployment_count: u8,               // Number of times deployed
+}
+
+// Epic account (staging deployments)
+pub struct Epic {
+    pub epic_id: u64,
+    pub project: Pubkey,
+    pub staging_url: Option<String>,        // Staging branch TX ID
+    pub story_count: u16,
+    pub completed_stories: u16,
+    pub status: EpicStatus,                 // InProgress, ReadyForStaging, Completed
+}
+
+// Project account (production deployments)
+pub struct Project {
+    // ... existing fields ...
+    pub development_url: Option<String>,    // Latest dev branch TX ID
+    pub staging_url: Option<String>,        // Latest staging branch TX ID
+    pub production_url: Option<String>,     // Main branch TX ID (final)
+}
+```
+
+**Backend Deployment Strategy (Akash)**:
+
+Backends are **mutable** (unlike frontends), so we use single persistent Akash deployment per environment:
+
+| Environment | Akash Deployment | Update Method | URL |
+|-------------|-----------------|---------------|-----|
+| **Development** | 1x Akash lease (persistent) | In-place updates via SDL redeploy | `https://{dev-provider}.akash.network` |
+| **Staging** | 1x Akash lease (persistent) | In-place updates via SDL redeploy | `https://{staging-provider}.akash.network` |
+| **Production** | 1x Akash lease (persistent) | In-place updates via SDL redeploy | `https://{prod-provider}.akash.network` |
+
+**Cost Implications:**
+- **Frontend (Arweave):** ~$0.09 per deployment × 3 environments × 40 stories = **~$10.80 per project**
+- **Backend (Akash):** $3/month × 3 environments = **$9/month per project** (stopped when project completes)
+
+**Token Holder Experience:**
+
+```
+Project Dashboard (Token Holder View):
+├─ 🏗️  Development: https://arweave.net/abc123 (40/40 stories merged)
+├─ 🧪 Staging: https://arweave.net/def456 (10/10 epics integrated)
+└─ 🚀 Production: https://arweave.net/ghi789 (FINAL - Project Complete!)
+
+Story Progress:
+├─ Epic 1: Authentication (✅ Deployed to staging)
+│   ├─ Story 1.1: Login page ✅ (dev: arweave.net/s1)
+│   ├─ Story 1.2: Signup flow ✅ (dev: arweave.net/s2)
+│   └─ Epic 1 staging URL: arweave.net/e1
+├─ Epic 2: Dashboard (🔄 4/5 stories complete)
+│   ├─ Story 2.1: UI layout ✅ (dev: arweave.net/s3)
+│   ├─ Story 2.2: Data fetch ✅ (dev: arweave.net/s4)
+│   └─ Story 2.3: Charts 🔄 (in progress)
+```
+
+**Recommended Approach for MVP:**
+- Use **direct Arweave/Akash URLs** (no custom DNS)
+- Deploy to all 3 environments (development/staging/production)
+- Track deployment URLs on-chain for full transparency
+- Add optional custom subdomains post-MVP if needed (`dev.project-123.slopmachine.fun`)
 
 ---
 
@@ -1320,26 +1601,67 @@ await sendMessage(chatId, message);
 - `approve_and_distribute()` - Automated validation passes → 2-way split (90% dev, 10% platform OR $0.25 min) (~30K CU)
 - `reject_and_refund()` - Automated validation fails (3+ attempts) → refund client, slash stake (~15K CU)
 
-**Escrow Account Structure (208 bytes):**
+**Escrow Account Structure (192 bytes):**
 ```rust
 pub struct Escrow {
     pub project_id: u64,
     pub opportunity_id: u64,
     pub client: Pubkey,
     pub developer: Pubkey,
-    pub qa_reviewer: Pubkey,
-    pub validator: Pubkey,
+    pub validator: Pubkey,              // Automated validation (not human)
     pub platform_wallet: Pubkey,
-    pub amount: u64,
-    pub developer_split_bps: u16,  // 9000 = 90%
-    pub platform_split_bps: u16,    // 1000 = 10%
-    pub minimum_platform_fee: u64,  // 250000000 lamports = 0.25 SOL
+    pub amount: u64,                    // Total story payment (lamports)
+    pub developer_split_bps: u16,       // 9000 = 90%
+    pub platform_split_bps: u16,        // 1000 = 10%
+    pub minimum_platform_fee: u64,      // 0.25 SOL (250000000 lamports)
     pub state: EscrowState,
     pub created_at: i64,
     pub updated_at: i64,
     pub bump: u8,
 }
 ```
+
+**Fund Release Logic (approve_and_distribute):**
+
+When automated validation passes (all GitHub Actions checks pass):
+
+1. **Calculate Platform Fee:**
+   ```rust
+   // Platform fee is 10% OR $0.25 minimum (whichever is HIGHER)
+   let platform_amount_10pct = (escrow.amount * 1000) / 10000;  // 10% in BPS
+   let platform_amount = max(platform_amount_10pct, escrow.minimum_platform_fee);
+   ```
+
+2. **Calculate Developer Payment:**
+   ```rust
+   // Developer gets remainder (ensures total = escrow.amount exactly)
+   let developer_amount = escrow.amount - platform_amount;
+   ```
+
+3. **Execute Transfers (CPI from marketplace contract):**
+   ```rust
+   // Transfer 1: Developer payment (90% or more if platform fee is minimum)
+   system_program::transfer(
+       escrow_pda -> developer_wallet,
+       developer_amount
+   );
+
+   // Transfer 2: Platform fee (10% or $0.25 minimum)
+   system_program::transfer(
+       escrow_pda -> platform_wallet,
+       platform_amount
+   );
+   ```
+
+**Example Calculations:**
+
+| Story Price | 10% Platform Fee | $0.25 Minimum | Actual Platform Fee | Developer Gets | Developer % |
+|-------------|------------------|---------------|---------------------|----------------|-------------|
+| $2.00 (0.01 SOL @ $200/SOL) | 0.001 SOL ($0.20) | **0.00125 SOL ($0.25)** | **0.00125 SOL** | 0.00875 SOL ($1.75) | 87.5% |
+| $3.00 (0.015 SOL) | 0.0015 SOL ($0.30) | 0.00125 SOL ($0.25) | **0.0015 SOL** | 0.0135 SOL ($2.70) | 90.0% |
+| $10.00 (0.05 SOL) | **0.005 SOL ($1.00)** | 0.00125 SOL ($0.25) | **0.005 SOL** | 0.045 SOL ($9.00) | 90.0% |
+
+**Key Insight:** Minimum platform fee protects against low-value stories eating into margins, while 90/10 split applies for normal-priced stories.
 
 **Security:**
 - Audited by OtterSec or Neodyme ($12K audit, Week 5-7)
