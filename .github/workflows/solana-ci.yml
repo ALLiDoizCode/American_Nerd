@@ -22,7 +22,7 @@ on:
 env:
   SOLANA_VERSION: '1.18.18'
   ANCHOR_VERSION: '0.30.0'
-  RUST_TOOLCHAIN: '1.79.0'
+  RUST_TOOLCHAIN: '1.81.0'
 
 jobs:
   lint:
@@ -129,7 +129,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build Anchor programs
-        run: anchor build
+        run: RUST_LOG=error anchor build --no-idl
 
       - name: Upload program artifacts
         uses: actions/upload-artifact@v4
@@ -234,7 +234,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build programs
-        run: anchor build
+        run: RUST_LOG=error anchor build --no-idl
 
       - name: Run Anchor tests
         run: anchor test --skip-local-validator

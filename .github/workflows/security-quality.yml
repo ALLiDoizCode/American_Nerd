@@ -171,13 +171,13 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.79.0
+          toolchain: 1.81.0
           profile: minimal
           override: true
 
       - name: Build for verification
         run: |
-          cargo build-sbf --manifest-path programs/slop-machine/Cargo.toml
+          RUST_LOG=error anchor build --no-idl
           echo "✅ Program built for verification"
 
       - name: Generate build hash
