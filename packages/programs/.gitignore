@@ -1,0 +1,27 @@
+# Anchor
+.anchor
+test-ledger
+
+# Rust
+target
+**/*.rs.bk
+
+# Node.js
+node_modules
+.yarn
+
+# Environment
+*.env
+!.env.example
+
+# Keypairs and secrets
+*.pem
+*.json.key
+id.json
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
