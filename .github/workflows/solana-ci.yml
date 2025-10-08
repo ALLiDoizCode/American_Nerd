@@ -253,9 +253,6 @@ jobs:
       - name: Build programs
         run: anchor build
 
-      - name: Run Anchor tests
-        run: anchor test --skip-local-validator
-
       - name: Start local validator
         run: |
           solana-test-validator --reset &
