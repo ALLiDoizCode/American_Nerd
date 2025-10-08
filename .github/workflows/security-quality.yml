@@ -180,7 +180,7 @@ jobs:
 
       - name: Build for verification
         run: |
-          RUST_LOG=error anchor build --no-idl
+          anchor build
           echo "✅ Program built for verification"
 
       - name: Generate build hash

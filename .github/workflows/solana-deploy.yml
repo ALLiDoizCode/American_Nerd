@@ -25,8 +25,8 @@ on:
         default: false
 
 env:
-  SOLANA_VERSION: '1.18.18'
-  ANCHOR_VERSION: '0.30.0'
+  SOLANA_VERSION: '2.1.0'
+  ANCHOR_VERSION: '0.31.1'
   RUST_TOOLCHAIN: '1.81.0'
 
 jobs:
@@ -125,7 +125,7 @@ jobs:
 
       - name: Build and test
         run: |
-          RUST_LOG=error anchor build --no-idl
+          anchor build
           anchor test --skip-local-validator
 
   deploy:
@@ -200,7 +200,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build programs
-        run: RUST_LOG=error anchor build --no-idl
+        run: anchor build
 
       - name: Setup Solana keypair
         run: |
