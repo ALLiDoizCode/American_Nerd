@@ -1,0 +1,10 @@
+Hardware_Configuration,Component,Price_USD_Low,Price_USD_High,Performance_Notes,Power_Draw_Watts,Verified_Date
+Used RTX 3090 24GB Setup,GPU,700,750,40 tok/sec Qwen 32B Q4,350,2025-10-07
+Used RTX 3090 24GB Setup,Workstation,400,500,Used system with CPU/RAM/PSU,100,2025-10-07
+Used RTX 3090 24GB Setup,Total,1100,1250,Budget option for local deployment,450,2025-10-07
+RTX 4090 24GB Setup,GPU,1650,2000,40+ tok/sec Qwen 32B,400,2025-10-07
+RTX 4090 24GB Setup,Workstation,500,800,New or quality used system,100,2025-10-07
+RTX 4090 24GB Setup,Total,2150,2800,Recommended for high volume,500,2025-10-07
+Mac Studio M2 Ultra 192GB,Complete System,4000,6000,10 tok/sec unified memory,90,2025-10-07
+RTX 3090 Ti 24GB,GPU,800,900,Similar to 3090 slightly faster,450,2025-10-07
+H100 PCIe 80GB,GPU,25000,30000,Enterprise only out of scope,350,2025-10-07

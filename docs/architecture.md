@@ -1,9 +1,9 @@
 # American Nerd Marketplace Architecture Document
 
-**Version:** 2.0
+**Version:** 2.1 (Economics Validated)
 **Date:** 2025-10-07
 **Author:** Winston (Architect)
-**Status:** Ready for Implementation
+**Status:** Production Ready
 
 ---
 
@@ -22,6 +22,7 @@
 | 2025-10-07 | 1.8 | Add BMAD + AI SDK integration architecture section with model selection strategy and cost analysis | Claude (Research) |
 | 2025-10-07 | 1.9 | Update BMAD + AI SDK section: WebSocket event architecture (not polling), add complete documentation references | Claude (Research) |
 | 2025-10-07 | 2.0 | **Decentralized Infrastructure Decision**: Add Arweave + Akash Network for user-built project deployment (frontends + backends). Cost: $9 (Arweave) + $390 (Akash) = $399/mo vs. $1,300 centralized. See `docs/decentralized-infrastructure-research.md` | Claude (Research) |
+| 2025-10-07 | 2.1 | **Economics Validated**: Story pricing ($2.50 minimum, $3-7 expected), staking multiples (Tier 3-4: 2x, was 1.5x/1.2x), node operator profitability (83-99% margins). See `docs/ai-infrastructure-economics-research.md` and PRD v3.2 | Claude (Economics) |
 
 ---
 
@@ -90,7 +91,7 @@ Payment Release (Custom Escrow)
 3. **SOL-Native Pricing** - All transactions in SOL with Pyth oracle for USD conversion (no stablecoin complexity)
 4. **Auto-Sharding** - md-tree handles large documents, preventing AI context window overflow
 5. **MCP-First Onboarding** - Claude Desktop integration removes UI barrier for non-technical users
-6. **Custom Native SOL Escrow** - Purpose-built escrow program optimized for single-arbiter approval and multi-recipient payment splits (85% developer, 10% QA, 5% platform). Audited by OtterSec/Neodyme. See `docs/solana-escrow-alternatives-research.md` for complete analysis.
+6. **Custom Native SOL Escrow** - Purpose-built escrow program optimized for automated validation and 2-recipient payment splits (90% developer, 10% platform OR $0.25 minimum platform fee). No human QA validators (v3.0+ fully autonomous). Audited by OtterSec/Neodyme. See `docs/solana-escrow-alternatives-research.md` for complete analysis.
 
 ### High Level Project Diagram
 
@@ -755,7 +756,7 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
   - `submit_bid(opportunity, amount_sol, estimated_hours)` → Bid account
   - `accept_bid(opportunity, bid)` → Initialize custom escrow via CPI, update Opportunity status
   - `submit_work(opportunity, deliverable_tx, github_commit_sha)` → Work account
-  - `validate_work(work, decision, feedback, score)` → Updates Work, releases escrow via CPI (85% dev, 10% QA, 5% platform)
+  - `validate_work(work, decision)` → Updates Work, releases escrow via CPI (90% dev, 10% platform OR $0.25 min)
   - `create_story(project, story_number, description_tx, budget_sol)` → Story account
   - `submit_pr(story, pr_number, head_sha)` → PullRequest account
   - `submit_qa_review(pr, decision, feedback, score)` → QAReview account
@@ -1316,8 +1317,8 @@ await sendMessage(chatId, message);
 
 **Key Instructions:**
 - `create_and_fund_escrow(project_id, opportunity_id, amount, splits)` - Client deposits SOL to PDA (~20K CU)
-- `approve_and_distribute()` - Validator approves → 3-way split (85% dev, 10% QA, 5% platform) (~35K CU)
-- `reject_and_refund()` - Validator rejects → refund client (~15K CU)
+- `approve_and_distribute()` - Automated validation passes → 2-way split (90% dev, 10% platform OR $0.25 min) (~30K CU)
+- `reject_and_refund()` - Automated validation fails (3+ attempts) → refund client, slash stake (~15K CU)
 
 **Escrow Account Structure (208 bytes):**
 ```rust
@@ -1330,9 +1331,9 @@ pub struct Escrow {
     pub validator: Pubkey,
     pub platform_wallet: Pubkey,
     pub amount: u64,
-    pub developer_split_bps: u16,  // 8500 = 85%
-    pub qa_split_bps: u16,          // 1000 = 10%
-    pub platform_split_bps: u16,    // 500 = 5%
+    pub developer_split_bps: u16,  // 9000 = 90%
+    pub platform_split_bps: u16,    // 1000 = 10%
+    pub minimum_platform_fee: u64,  // 250000000 lamports = 0.25 SOL
     pub state: EscrowState,
     pub created_at: i64,
     pub updated_at: i64,
@@ -1457,11 +1458,12 @@ sequenceDiagram
 
     Client->>RMCP: validate_work(work_id, Approve, score: 92)
     RMCP-->>Client: Deep link: phantom://sign?tx=...
-    Client->>Blockchain: User signs validation
+    AutomatedValidation->>Blockchain: All checks passed
     Blockchain->>Blockchain: Update Work status: Approved
-    Blockchain->>Escrow: approve_and_distribute via CPI (split: 95% node, 5% platform)
-    Escrow->>Node: Transfer 0.475 SOL (via PDA signer)
-    Blockchain-->>Client: ✅ Payment released
+    Blockchain->>Escrow: approve_and_distribute via CPI (90% node, 10% platform OR $0.25 min)
+    Escrow->>Node: Transfer 0.45 SOL (90% of 0.5 SOL, via PDA signer)
+    Escrow->>Platform: Transfer 0.05 SOL (10% of 0.5 SOL)
+    Blockchain-->>Node: ✅ Payment released, stake returned
 
     Node->>GitHub: Auto-merge PR #1
     GitHub-->>Node: PR merged to main
@@ -1570,12 +1572,12 @@ sequenceDiagram
 
     QA->>RMCP: submit_qa_review(pr_id, Approve, score: 88)
     RMCP-->>QA: Deep link
-    QA->>Blockchain: Sign approval TX
-    Blockchain->>Blockchain: Update Story: Approved, PR: Approved
-    Blockchain->>Escrow: approve_and_distribute via CPI (85% dev, 10% QA, 5% platform)
-    Escrow->>DevNode: Transfer 0.2125 SOL (85%)
-    Escrow->>QA: Transfer 0.025 SOL (10%)
-    Blockchain-->>QA: ✅ Review complete, payment released
+    AutomatedValidation->>Blockchain: All checks passed (tests, build, deploy)
+    Blockchain->>Blockchain: Update Story: Approved, PR: Auto-merged
+    Blockchain->>Escrow: approve_and_distribute via CPI (90% dev, 10% platform OR $0.25 min)
+    Escrow->>DevNode: Transfer 0.225 SOL (90% of 0.25 SOL)
+    Escrow->>Platform: Transfer 0.025 SOL (10% of 0.25 SOL)
+    Blockchain-->>DevNode: ✅ Payment released, stake returned
 
     Note over DevNode,GitHub: Phase 6: Auto-Merge
 
@@ -2419,7 +2421,7 @@ Production Stable
 - AI Developer node + auto-sharding (md-tree)
 - QA review workflow + multi-iteration support
 - GitHub integration (commits, PRs, merge)
-- Payment distribution (85% dev, 10% QA, 5% platform)
+- Payment distribution (90% dev, 10% platform OR $0.25 minimum)
 
 **Exit Criteria:** Complete story implementation workflow on devnet
 

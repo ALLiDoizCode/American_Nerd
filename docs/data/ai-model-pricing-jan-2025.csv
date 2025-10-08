@@ -1,0 +1,13 @@
+Provider,Model,Input_USD_Per_1M_Tokens,Output_USD_Per_1M_Tokens,Quality_Rating,Notes,Verified_Date
+Anthropic,Sonnet 4.5,3.00,15.00,5,Best quality <200K tokens,2025-01-07
+Anthropic,Sonnet 4.5 (>200K),6.00,22.50,5,Long context pricing,2025-01-07
+Anthropic,Opus 4.1,15.00,75.00,5,Highest reasoning expensive,2025-01-07
+Anthropic,Haiku 3.5,0.80,4.00,4,Faster cheaper alternative,2025-01-07
+OpenAI,GPT-4o,5.00,15.00,4,Competitive with Sonnet,2025-01-07
+OpenAI,GPT-4o-mini,0.15,0.60,3,Very cheap lower quality,2025-01-07
+Google,Gemini 2.5 Pro,1.25,10.00,4,Good value <200K tokens,2025-01-07
+Google,Gemini 2.5 Flash,0.30,2.50,3,Fastest cheapest,2025-01-07
+DeepSeek,Coder V2,0.14,0.14,3,Specialized for code ultra-cheap,2025-01-07
+DeepSeek,Chat,0.27,1.10,3,General purpose,2025-01-07
+Groq,Llama 3.3 70B,0.59,0.79,3,Fast inference 394 TPS,2025-01-07
+Groq,Llama 3.1 8B,0.05,0.08,2,Ultra-cheap lower capability,2025-01-07
