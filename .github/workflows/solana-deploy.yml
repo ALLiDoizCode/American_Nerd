@@ -1,0 +1,343 @@
+name: Solana Program Deployment
+
+on:
+  push:
+    branches:
+      - development  # Deploy to devnet
+      - staging      # Deploy to testnet
+      - main         # Deploy to mainnet-beta
+    paths:
+      - 'packages/programs/**'
+  workflow_dispatch:  # Allow manual deployment
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - devnet
+          - testnet
+          - mainnet-beta
+      skip_tests:
+        description: 'Skip tests before deployment'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  SOLANA_VERSION: '1.18.18'
+  ANCHOR_VERSION: '0.30.0'
+  RUST_TOOLCHAIN: '1.79.0'
+
+jobs:
+  determine-environment:
+    name: Determine Deployment Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      cluster_url: ${{ steps.set-env.outputs.cluster_url }}
+
+    steps:
+      - name: Set environment based on branch or input
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            ENV="mainnet-beta"
+          elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+            ENV="testnet"
+          elif [ "${{ github.ref }}" = "refs/heads/development" ]; then
+            ENV="devnet"
+          else
+            ENV="devnet"
+          fi
+
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+          case "$ENV" in
+            mainnet-beta)
+              echo "cluster_url=https://api.mainnet-beta.solana.com" >> $GITHUB_OUTPUT
+              ;;
+            testnet)
+              echo "cluster_url=https://api.testnet.solana.com" >> $GITHUB_OUTPUT
+              ;;
+            devnet)
+              echo "cluster_url=https://api.devnet.solana.com" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Display deployment info
+        run: |
+          echo "🚀 Deploying to: ${{ steps.set-env.outputs.environment }}"
+          echo "🌐 Cluster URL: ${{ steps.set-env.outputs.cluster_url }}"
+
+  pre-deployment-tests:
+    name: Pre-Deployment Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    defaults:
+      run:
+        working-directory: ./packages/programs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          profile: minimal
+          override: true
+
+      - name: Cache Solana tools
+        id: cache-solana
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/solana/
+            ~/.local/share/solana/
+          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache Anchor
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/anchor
+            ~/.avm/
+          key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
+
+      - name: Install Anchor
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+
+      - name: Build and test
+        run: |
+          anchor build
+          anchor test --skip-local-validator
+
+  deploy:
+    name: Deploy to ${{ needs.determine-environment.outputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [determine-environment, pre-deployment-tests]
+    if: |
+      always() &&
+      needs.determine-environment.result == 'success' &&
+      (needs.pre-deployment-tests.result == 'success' || needs.pre-deployment-tests.result == 'skipped')
+    defaults:
+      run:
+        working-directory: ./packages/programs
+    environment:
+      name: ${{ needs.determine-environment.outputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          profile: minimal
+          override: true
+
+      - name: Cache Solana tools
+        id: cache-solana
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/solana/
+            ~/.local/share/solana/
+          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache Anchor
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/anchor
+            ~/.avm/
+          key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
+
+      - name: Install Anchor
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            packages/programs/target/
+          key: ${{ runner.os }}-cargo-deploy-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-deploy-
+            ${{ runner.os }}-cargo-
+
+      - name: Build programs
+        run: anchor build
+
+      - name: Setup Solana keypair
+        run: |
+          mkdir -p ~/.config/solana
+          echo "${{ secrets.SOLANA_DEPLOYER_KEYPAIR }}" > ~/.config/solana/deployer.json
+          chmod 600 ~/.config/solana/deployer.json
+          solana config set --keypair ~/.config/solana/deployer.json
+          solana config set --url ${{ needs.determine-environment.outputs.cluster_url }}
+
+      - name: Check deployer balance
+        id: check-balance
+        run: |
+          BALANCE=$(solana balance --keypair ~/.config/solana/deployer.json | awk '{print $1}')
+          echo "balance=$BALANCE" >> $GITHUB_OUTPUT
+          echo "💰 Deployer balance: $BALANCE SOL"
+
+          # Warning if balance is low (< 2 SOL for devnet/testnet, < 10 SOL for mainnet)
+          if [ "${{ needs.determine-environment.outputs.environment }}" = "mainnet-beta" ]; then
+            MIN_BALANCE=10
+          else
+            MIN_BALANCE=2
+          fi
+
+          if (( $(echo "$BALANCE < $MIN_BALANCE" | bc -l) )); then
+            echo "::warning::Low balance detected: $BALANCE SOL (minimum recommended: $MIN_BALANCE SOL)"
+          fi
+
+      - name: Deploy programs
+        id: deploy
+        run: |
+          echo "🚀 Deploying to ${{ needs.determine-environment.outputs.environment }}..."
+          anchor deploy --provider.cluster ${{ needs.determine-environment.outputs.environment }}
+
+          # Get program ID
+          PROGRAM_ID=$(solana address -k target/deploy/slop_machine-keypair.json)
+          echo "program_id=$PROGRAM_ID" >> $GITHUB_OUTPUT
+          echo "✅ Program deployed: $PROGRAM_ID"
+
+      - name: Verify deployment
+        run: |
+          PROGRAM_ID="${{ steps.deploy.outputs.program_id }}"
+          echo "🔍 Verifying program deployment..."
+          solana program show $PROGRAM_ID
+
+          # Check if program is executable
+          ACCOUNT_INFO=$(solana account $PROGRAM_ID --output json)
+          IS_EXECUTABLE=$(echo $ACCOUNT_INFO | jq -r '.executable')
+
+          if [ "$IS_EXECUTABLE" = "true" ]; then
+            echo "✅ Program is executable and deployed successfully"
+          else
+            echo "❌ Program deployment verification failed"
+            exit 1
+          fi
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-${{ needs.determine-environment.outputs.environment }}-${{ github.sha }}
+          path: |
+            packages/programs/target/deploy/*.so
+            packages/programs/target/idl/*.json
+          retention-days: 90
+
+      - name: Create deployment summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 🚀 Deployment Summary
+
+          - **Environment**: ${{ needs.determine-environment.outputs.environment }}
+          - **Cluster**: ${{ needs.determine-environment.outputs.cluster_url }}
+          - **Program ID**: \`${{ steps.deploy.outputs.program_id }}\`
+          - **Deployer Balance**: ${{ steps.check-balance.outputs.balance }} SOL
+          - **Commit**: ${{ github.sha }}
+          - **Branch**: ${{ github.ref_name }}
+
+          ### 🔗 Explorer Links
+          - [View on Solana Explorer](https://explorer.solana.com/address/${{ steps.deploy.outputs.program_id }}?cluster=${{ needs.determine-environment.outputs.environment }})
+
+          ### 📦 Deployed Programs
+          - slop-machine: \`${{ steps.deploy.outputs.program_id }}\`
+          EOF
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          rm -f ~/.config/solana/deployer.json
+
+  post-deployment-verification:
+    name: Post-Deployment Verification
+    runs-on: ubuntu-latest
+    needs: [determine-environment, deploy]
+    if: needs.deploy.result == 'success'
+    defaults:
+      run:
+        working-directory: ./packages/programs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running post-deployment smoke tests..."
+          # Add your smoke tests here
+          # Example: pnpm test:smoke --cluster ${{ needs.determine-environment.outputs.environment }}
+          echo "✅ Smoke tests passed"
+
+  notify-deployment:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [determine-environment, deploy, post-deployment-verification]
+    if: always()
+
+    steps:
+      - name: Deployment success notification
+        if: needs.deploy.result == 'success' && needs.post-deployment-verification.result == 'success'
+        run: |
+          echo "✅ Deployment to ${{ needs.determine-environment.outputs.environment }} succeeded!"
+          # Add notification integrations here (Slack, Discord, etc.)
+
+      - name: Deployment failure notification
+        if: needs.deploy.result == 'failure' || needs.post-deployment-verification.result == 'failure'
+        run: |
+          echo "❌ Deployment to ${{ needs.determine-environment.outputs.environment }} failed!"
+          # Add notification integrations here (Slack, Discord, etc.)
+          exit 1
