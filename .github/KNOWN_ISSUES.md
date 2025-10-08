@@ -108,5 +108,56 @@ This issue will be resolved when:
 
 ---
 
+## Cargo Clippy Disabled
+
+**Status:** Temporarily Disabled
+**Severity:** Low
+**Affected Components:** CI linting workflow
+
+### Issue Description
+
+Cargo clippy is temporarily disabled in CI due to the same anchor-syn IDL generation bug described above. Clippy requires compilation, which triggers the IDL generation error.
+
+### Workaround
+
+- ✅ Clippy step skipped in CI with informational message
+- ✅ Developers can run `cargo fmt` locally for basic linting
+- ✅ Build step still validates compilation (with `--no-idl`)
+
+### Re-enable When
+
+- Anchor v0.31+ is released OR
+- Manual anchor-syn patch is applied
+
+---
+
+## Security Audit Warnings
+
+**Status:** Non-blocking Warnings
+**Severity:** Low
+**Affected Components:** Security audit workflow
+
+### Issue Description
+
+Cargo audit detects vulnerabilities in transitive dependencies:
+- `curve25519-dalek` - Timing variability (RUSTSEC-2024-0344)
+- `atty` - Unmaintained crate (RUSTSEC-2024-0375)
+
+Both are pulled in by Solana SDK dependencies and cannot be easily upgraded.
+
+### Impact
+
+- ⚠️ Low risk - timing attacks require local access
+- ⚠️ `atty` is used only for terminal detection (dev/logging)
+- ✅ Security audit continues to run but doesn't block CI
+- ✅ Vulnerabilities are logged for tracking
+
+### Resolution
+
+- Monitor Solana SDK updates for dependency upgrades
+- Security audit will pass once upstream dependencies are fixed
+
+---
+
 **Last Updated:** 2025-10-08
 **Affects:** All developers building Slop Machine platform
