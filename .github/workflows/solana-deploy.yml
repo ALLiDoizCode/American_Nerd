@@ -103,7 +103,7 @@ jobs:
       - name: Install Solana
         if: steps.cache-solana.outputs.cache-hit != 'true'
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Add Solana to PATH
@@ -118,10 +118,13 @@ jobs:
             ~/.avm/
           key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
 
-      - name: Install Anchor
-        if: steps.cache-anchor.outputs.cache-hit != 'true'
+      - name: Install AVM
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --force
+
+      - name: Install Anchor via AVM
         run: |
-          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+          avm install ${{ env.ANCHOR_VERSION }}
+          avm use ${{ env.ANCHOR_VERSION }}
 
       - name: Build and test
         run: |
@@ -165,7 +168,7 @@ jobs:
       - name: Install Solana
         if: steps.cache-solana.outputs.cache-hit != 'true'
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Add Solana to PATH
@@ -180,10 +183,13 @@ jobs:
             ~/.avm/
           key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
 
-      - name: Install Anchor
-        if: steps.cache-anchor.outputs.cache-hit != 'true'
+      - name: Install AVM
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --force
+
+      - name: Install Anchor via AVM
         run: |
-          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+          avm install ${{ env.ANCHOR_VERSION }}
+          avm use ${{ env.ANCHOR_VERSION }}
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
