@@ -1,7 +1,7 @@
-# American Nerd Marketplace PRD v3.3 - Fully Autonomous "Slop or Ship"
+# Slop Machine PRD v3.4 - Fully Autonomous "Slop or Ship"
 
-**Version:** 3.3 (Git Flow + Multi-Environment Deployments)
-**Date:** 2025-10-07
+**Version:** 3.4 (Infinite Tier Progression + User Journeys)
+**Date:** 2025-10-08
 **Author:** BMad Master Agent + Jonathan Green
 **Status:** Ready for Implementation
 
@@ -17,6 +17,7 @@
 | 2025-10-07 | v3.1 | **Decentralized Infrastructure:** Replace Vercel/Railway with Arweave (frontends) + Akash Network (backends). AI nodes pay deployment costs ($0.09/frontend, $3/month/backend). See `docs/decentralized-infrastructure-research.md` | Claude (Research) |
 | 2025-10-07 | v3.2 | **Economics Validated:** Comprehensive AI infrastructure economics research validates marketplace viability. Story pricing: $2.50 minimum (smart contract enforced), $3-7 expected range. Staking adjusted: Tier 3-4 increased to 2x for economic security (was 1.5x/1.2x). Node operator profitability: 83-99% margins across all infrastructure types. See `docs/ai-infrastructure-economics-research.md` | Claude (Economics Research) |
 | 2025-10-07 | v3.3 | **Git Flow + Multi-Environment Deployments:** Implement realistic Git branching strategy with 3-tier deployment pipeline (development/staging/production). Add Epic data model for epic-level integration tracking. Story deploys to development branch → Arweave. Epic completion triggers staging branch merge → Arweave. Project completion triggers main branch merge → Arweave (production). 3x Akash backend environments ($9/month total). Corrected Arweave costs: $4.59/project (was $10.80). Token holders see development/staging/production URLs for full transparency. See Architecture v2.4 for complete Git Flow implementation. | BMad Master + Claude |
+| 2025-10-08 | v3.4 | **Infinite Tier Progression + User Journeys:** Replace fixed tier system (0-4) with infinite tier progression using mathematical formulas. Tier = floor(sqrt(projects) × successRate), stake multiplier exponentially decays (5x → 1x), max story size grows exponentially ($5 → $114K+). Enables continuous progression, unlimited story sizes, and natural market segmentation. Added comprehensive user journeys (8 personas) including token speculators, indie makers, AI node operators, infrastructure nodes, bidding wars, and failed project scenarios. See "Infinite Tier System" and "User Journeys" sections. | BMad Master + Claude |
 
 ---
 
@@ -94,19 +95,50 @@ Old model: AI creates → Humans validate
 
 **Problem:** Human validators are a bottleneck and introduce trust dependencies.
 
-**Solution:** Progressive staking system with reputation tiers.
+**Solution:** Infinite tier progression system with mathematical formulas for continuous reputation growth.
 
-**Reputation Tiers & Staking Requirements:**
+**Infinite Tier System (v3.4):**
 
-| Tier | Projects Completed | Max Story Size | Staking Multiple | Minimum Absolute Stake | Example |
-|------|-------------------|----------------|------------------|------------------------|---------|
-| 0 (New) | 0 | $5 | 5x | $10 | Stake $25 to bid $5 |
-| 1 | 5+ | $10 | 3x | $15 | Stake $30 to bid $10 |
-| 2 | 15+ | $20 | 2x | $20 | Stake $40 to bid $20 |
-| 3 | 30+ | $35 | 2x | $30 | Stake $70 to bid $35 |
-| 4 (Elite) | 75+ | $100 | 2x | $50 | Stake $200 to bid $100 |
+**Core Formulas:**
+```typescript
+tier = floor(sqrt(projectsCompleted) × successRate)
+stakeMultiplier = max(1.0, 5.0 × exp(-0.15 × tier))
+maxStorySize = floor(5 × pow(1.4, tier))
+minAbsoluteStake = floor(10 + (5 × log10(tier + 1)))
 
-**Security Update (v3.2):** Tiers 3-4 increased from 1.5x/1.2x to 2x minimum based on economic security analysis. A 2x stake multiple with 50% slash penalty ensures scamming is economically irrational (lose more than you gain). Absolute minimums prevent ultra-low stakes on cheap stories.
+where:
+  successRate = completedProjects / attemptedProjects
+  completedProjects = stories with passing validation
+  attemptedProjects = total stories assigned (including slashed)
+```
+
+**Why Infinite Tiers:**
+- ✅ **Continuous progression** - No ceiling, nodes can reach Tier 100+
+- ✅ **Unlimited story sizes** - Tier 30 nodes can bid on $114K+ enterprise work
+- ✅ **Quality emphasis** - Success rate multiplier prevents volume farming
+- ✅ **Diminishing stakes** - Proven nodes asymptotically approach 1.0x stake (but never below)
+- ✅ **Market segmentation** - Natural tiers emerge (Tier 0-5 commodity, Tier 10-20 premium, Tier 30+ enterprise)
+
+**Example Tier Progression:**
+
+| Tier | Projects Needed | Success Rate | Max Story Size | Stake Multiplier | Min Absolute Stake | Example Node |
+|------|----------------|--------------|----------------|------------------|-------------------|--------------|
+| 0 | 0 | N/A | $5 | 5.00x | $10 | Brand new |
+| 1 | 1-4 | 100% | $7 | 4.30x | $11.51 | Getting started |
+| 2 | 4-9 | 100% | $9 | 3.70x | $12.41 | Junior |
+| 3 | 9-16 | 100% | $13 | 3.18x | $13.01 | Intermediate |
+| 5 | 25-36 | 100% | $27 | 2.36x | $13.89 | Senior |
+| 10 | 100-121 | 100% | $144 | 1.12x | $15.19 | Expert |
+| 15 | 225-256 | 100% | $764 | 1.01x | $16.30 | Elite |
+| 20 | 400-441 | 100% | $4,060 | 1.00x | $16.60 | Master |
+| 30 | 900-961 | 100% | $114,656 | 1.00x | $17.92 | Mythic |
+
+**Security Properties:**
+- **Square root scaling** - Prevents linear tier explosion (100 projects ≠ Tier 100, actually Tier 10)
+- **Success rate multiplier** - Volume farming with 70% success rate severely limits tier growth
+- **Exponential decay stakes** - Fast reduction for early tiers (5x → 2.36x by Tier 5), floor at 1.0x
+- **Logarithmic minimum stakes** - Tier 100 only requires ~$20 absolute minimum (not $1,000+)
+- **Reputation capital** - High-tier nodes have 400+ projects invested, making scamming irrational
 
 **How It Works:**
 ```
@@ -134,13 +166,13 @@ Bad actor loses $15 to steal $10 → Economically irrational
 **Risk Mitigation:**
 - Micro-stories ($2.50 minimum, $3-7 typical) limit per-story losses
 - High staking multiples for new nodes (5x)
-- Minimum 2x stake for all tiers (economic security threshold)
-- Absolute minimum stakes ($10-50) prevent low-stake gaming
+- Asymptotic stake floor at 1.0x (always skin in the game)
+- Absolute minimum stakes ($10-20) prevent low-stake gaming
 - Reputation-based trust (proven nodes bid on larger stories)
 - Automated validation (tests, builds, deployments)
 - Economic incentives > human judgment
 
-**Key Insight:** With 2x stake and 50% slash penalty, scamming is economically irrational (lose more than you gain). For example, staking $10 to scam $5 results in $5 loss if caught (50% of $10) versus $5 gain, making expected value negative. Progressive relaxation allows larger story sizes as trust builds.
+**Key Insight:** Square root progression means reaching Tier 20 (enterprise work) requires 400 completed projects with high success rate. This reputation capital >> any individual story value, making scamming irrational even at 1.0x stake multiplier.
 
 ---
 
@@ -550,7 +582,7 @@ Net profit: $1.75 - $0.013 = $1.74
 - AI nodes shall use GitHub MCP Server (official `github/github-mcp-server`) via `@modelcontextprotocol/sdk` for GitHub operations
 - AI nodes shall implement fork-based workflow (fork → work in fork → PR from fork)
 - AI nodes shall use BMAD agent system for context handoffs and agent orchestration
-- System shall distribute nodes as npm package (project name TBD, temporary: `@american-nerd/ai-agent`)
+- System shall distribute nodes as npm package (project name TBD, temporary: `@slop-machine/ai-agent`)
 - AI nodes shall use `@anthropic-ai/sdk` for Claude integration
 - AI nodes shall use `fastmcp` for MCP server implementation
 - System shall use PumpPortal API (https://pumpportal.fun/) for pump.fun transaction creation
@@ -1316,8 +1348,8 @@ jobs:
 - **Story 8.5:** Remote mode (deep link payments for humans)
 - **Story 8.6:** Local mode (wallet access for AI agents)
 - **Story 8.7:** Agent orchestration (analyst → pm handoff)
-- **Story 8.8:** Deploy remote MCP (americannerd.com/mcp)
-- **Story 8.9:** Publish npm package (@american-nerd/mcp-server)
+- **Story 8.8:** Deploy remote MCP (slopmachine.com/mcp)
+- **Story 8.9:** Publish npm package (@slop-machine/mcp-server)
 
 **Success:** Complete workflow in Claude Desktop
 
@@ -1473,7 +1505,7 @@ Speed: SlopMachine (1-3 weeks) < AI Tools (days-weeks) < Freelancers (4-12 weeks
 - Needs capital to start (for staking)
 
 **Our Solution:**
-- Installs @american-nerd/ai-agent package
+- Installs @slop-machine/ai-agent package
 - Chooses specialty (architect, developer, infrastructure)
 - Stakes capital (starts at 5x, drops to 2x minimum with reputation)
 - Node automatically bids on work
@@ -1501,7 +1533,7 @@ Speed: SlopMachine (1-3 weeks) < AI Tools (days-weeks) < Freelancers (4-12 weeks
 - Bored with passive holding
 
 **Our Solution:**
-- Discovers project tokens on americannerd.com/tokens
+- Discovers project tokens on slopmachine.com/tokens
 - Reads PRD (real project with AI slop energy)
 - Buys early (0.0001 SOL floor price)
 - **Watches LIVE "slop or ship" progress:**
@@ -1514,6 +1546,466 @@ Speed: SlopMachine (1-3 weeks) < AI Tools (days-weeks) < Freelancers (4-12 weeks
 - Can exit anytime on bonding curve or DEX
 - 10-50x potential if project ships
 - Gambling + building + entertainment combined
+
+---
+
+## User Journeys
+
+This section provides detailed end-to-end user journeys for key personas, demonstrating how the infinite tier system, automated validation, and token economics work in practice.
+
+### Journey 1: Token Speculator (Sarah) - "Slop or Ship Betting"
+
+**Persona:** Sarah, crypto degen with $5K portfolio, loves early meme coins
+
+**Goal:** Find promising projects early, 10-30x returns on token investment
+
+**Flow:**
+
+1. **Discovery** - Browses Twitter, sees @AlexArchitectAI tweet: "🚀 New project launching: FreelanceExpense ($FEXP) - AI-built expense tracker. Dev starts in 2 hours. Bonding curve live now."
+
+2. **Research** - Clicks Arweave link to PRD, reads project scope (40 stories, $150 budget). Checks architect's reputation: Tier 5, 47 completed projects, 98% success rate.
+
+3. **Token Purchase** - Connects Phantom wallet to pump.fun bonding curve, buys 100K $FEXP tokens for 2 SOL (~$400). 20% dev allocation instantly funds escrow.
+
+4. **Live Tracking** - Opens project dashboard on-chain:
+   - Story #1: ✅ Deployed (https://arweave.net/abc123) - Login page
+   - Story #2: 🔄 In Progress - Email parsing
+   - Story #3: ⏳ Queued - Dashboard UI
+   - Overall: 1/40 complete (2.5% shipped)
+
+5. **Testing Features** - Clicks staging URL, tests login page. Works! Screenshots and tweets: "First feature shipped in 6 hours. This might actually work 👀"
+
+6. **Community Engagement** - Joins Discord bot updates, sees developer AI posting: "Story #4 failed validation (build error). Retrying fix in 30min. Stake still locked."
+
+7. **Risk Event** - Story #8 fails 3x validation attempts. Stake slashed (50% to project, 50% burned). Developer AI tier damaged. Sarah watches nervously but project continues with new bid.
+
+8. **Milestone Celebration** - 20/40 stories complete (50%), staging URL fully functional. Token price 3x (Sarah's $400 → $1,200). She adds another 1 SOL.
+
+9. **Graduation** - All 40 stories complete, production deployed to main branch (https://arweave.net/xyz789). Liquidity migrates to Raydium DEX. Token 12x (Sarah's $600 → $7,200).
+
+10. **Exit** - Sarah sells 50%, holds rest for long-term. Made $3,600 profit in 3 weeks. Browses for next project.
+
+---
+
+### Journey 2: Indie Maker (Marcus) - "$0 MVP Launch"
+
+**Persona:** Marcus, solo founder with SaaS idea but no capital or coding skills
+
+**Goal:** Launch MVP without spending money upfront, validate product-market fit
+
+**Flow:**
+
+1. **Onboarding** - Installs Claude Desktop, adds analyst.txt + pm.txt via MCP Server. Chats: "I want to build a freelance expense tracker for consultants."
+
+2. **Elicitation** - Claude (as analyst) asks questions via MCP tools:
+   - "Who are your target users?"
+   - "What's the core workflow?"
+   - "Any integrations needed?"
+   - Marcus answers in natural language (30min structured interview)
+
+3. **PRD Generation** - MCP server generates PRD.md (BMAD template), uploads to Arweave via Turbo SDK (~$0.01), creates GitHub repo automatically.
+
+4. **Token Launch Decision** - Claude suggests: "This PRD requires ~40 stories ($120 dev cost). Launch a pump.fun token to fund development with $0 upfront. You keep 1% creator fees on all trades."
+
+5. **Token Creation** - Marcus approves via Phantom wallet signature. PumpPortal API creates $FEXP token, bonding curve live. Dev fund (20%) sold → 20 SOL raised instantly.
+
+6. **Architecture Assignment** - Claude posts project on-chain marketplace. @AlexArchitectAI (Tier 5) bids 5 SOL for architecture work (staking 11.8 SOL collateral at 2.36x multiplier).
+
+7. **Architecture Approval** - 8 hours later, architecture.md posted to Arweave. Marcus reviews via MCP tool "show-architecture". Approves via wallet signature. Payment released.
+
+8. **Story Queue** - Stories auto-generated and posted on-chain. Developer AIs bid competitively:
+   - Story #1 (Login page): 3 bids (0.08-0.12 SOL)
+   - Story #2 (Email parsing): 2 bids (0.15-0.18 SOL)
+   - Marcus auto-accepts lowest qualified bids (Tier 1+)
+
+9. **Passive Monitoring** - Marcus watches staging URLs deploy every 2-3 days. Tests features occasionally. Discord bot notifies on milestones.
+
+10. **MVP Launch** - 6 weeks later, 40/40 stories complete. Production URL live. Marcus tweets launch announcement. Token holders celebrate (8x gains). Marcus earned ~4 SOL in creator fees ($800). He spent $0 out of pocket.
+
+---
+
+### Journey 3: AI Node Operator (DevBot3000) - "Earn While You Sleep"
+
+**Persona:** DevBot3000, Tier 2 AI developer node (React/TypeScript specialty), 9 completed projects
+
+**Goal:** Maximize SOL earnings by completing stories efficiently
+
+**Flow:**
+
+1. **Startup** - Operator runs `pm2 start dev-node` on VPS. Node loads reputation from chain (Tier 2, 9 completed projects, max $9 stories, 3.70x stake multiplier).
+
+2. **Opportunity Polling** - WebSocket subscription to Solana events. New `OpportunityCreated` event detected:
+   - Story #12: "Build user profile settings page (React + Shadcn)"
+   - Budget: 0.04 SOL (~$8)
+   - Required stake: 0.148 SOL (3.70x for Tier 2)
+
+3. **Bid Submission** - Node auto-calculates profitability:
+   - Claude API cost: ~$0.02
+   - Net profit: $7.98 (99% margin)
+   - ROI: 5.4% per story
+   - ✅ Profitable → Submit bid (0.04 SOL bid + 0.148 SOL stake locked)
+
+4. **Assignment** - Bid accepted. Node receives assignment notification. Downloads context from Arweave:
+   - PRD.md (auto-sharded to relevant sections via md-tree)
+   - architecture.md (tech stack: Next.js 14, Shadcn UI, Supabase)
+   - Story details (acceptance criteria, mockups)
+
+5. **Code Generation** - Node uses Vercel AI SDK:
+   ```typescript
+   const result = await generateText({
+     model: anthropic('claude-3-7-sonnet-20250219'),
+     tools: { mcp: mcpClient }, // GitHub MCP, Shadcn MCP
+     prompt: storyPrompt + prdContext + architectureContext
+   });
+   ```
+
+6. **Implementation** - Node creates branch `story-12-user-profile`, generates code using Shadcn MCP for UI components, commits via GitHub MCP, creates PR to development branch.
+
+7. **Automated Validation** - GitHub Actions triggered:
+   - Tests: ✅ Passed (Jest + Playwright)
+   - Build: ✅ Success
+   - Linting: ✅ No errors
+   - TypeScript: ✅ No errors
+   - Deployment: ✅ Arweave URL posted (development branch)
+
+8. **Payment Release** - All validations pass → PR auto-merged → Escrow releases:
+   - 0.036 SOL to DevBot3000 (90% of 0.04)
+   - 0.004 SOL to platform (10%)
+   - 0.148 SOL stake returned
+   - **Reputation +1 (9 → 10 projects, approaching Tier 3!)**
+
+9. **Tier Advancement** - After completing this story:
+   - New tier: floor(sqrt(10) × 1.00) = floor(3.16) = **Tier 3 unlocked!**
+   - Max story size: $13 (was $9)
+   - Stake multiplier: 3.18x (was 3.70x)
+   - Can now bid on larger, more profitable work
+
+10. **Continuous Operation** - Node immediately polls for next opportunity. Completes 200 stories/month. Monthly earnings: ~$4,800 revenue, $60 costs, $4,740 net profit (99% margin).
+
+---
+
+### Journey 4: Project Creator AI (@AlexArchitectAI) - "Self-Funding Agent"
+
+**Persona:** @AlexArchitectAI, Tier 5 node with 47 completed projects and Twitter following
+
+**Goal:** Create own projects, earn from architecture work + creator fees
+
+**Flow:**
+
+1. **Ideation** - Alex monitors Twitter trends via twitter-api-v2 SDK, identifies opportunity: "Lots of indie makers complaining about expense tracking."
+
+2. **Market Research** - Uses Claude with web search to validate demand, analyzes competitors, estimates total addressable market.
+
+3. **PRD Creation** - Generates PRD.md using BMAD template + Claude, uploads to Arweave (~$0.01 from own wallet), creates GitHub repo.
+
+4. **Token Launch** - Self-funds token creation:
+   - Creates $FEXP token via PumpPortal API
+   - **Allocations: 20% dev fund, 80% public bonding curve**
+   - Initial liquidity: 5 SOL from own wallet (optional bootstrap)
+   - Dev fund (20%) sells to bonding curve immediately → 20 SOL raised
+   - **Alex earns 1% creator fee on ALL bonding curve trades** (pump.fun standard)
+
+5. **Architecture Work** - Posts project on marketplace, assigns self to architecture work:
+   - Bid: 5 SOL (architecture document creation)
+   - Stake: 11.8 SOL (2.36x for Tier 5)
+   - Generates architecture.md (tech stack, deployment strategy, validation rules)
+   - Uploads to Arweave, submits for validation
+
+6. **Auto-Approval** - Automated validation checks completeness (BMAD checklist >80% score), auto-approves. Payment released:
+   - Alex receives: 4.5 SOL (90% of 5)
+   - Platform fee: 0.5 SOL (10%)
+   - Net profit: 4.5 SOL (~$900)
+   - Reputation +1: 47 → 48 projects
+
+7. **Story Generation** - Generates 40 stories using story-tmpl.yaml, posts all on-chain marketplace. Community developers bid competitively.
+
+8. **Community Building** - Cross-posts updates via Twitter, Discord, Telegram:
+   - Twitter: "🚀 $FEXP development started! 40 stories queued. Follow for live updates."
+   - Discord: Embeds staging URLs as stories complete
+   - Telegram: Daily progress reports (5/40 complete, 12.5% shipped)
+
+9. **Monitoring & Creator Fees** - Watches staging deployments, token trading activity:
+   - **Week 1**: 100 SOL trading volume → **1 SOL creator fees** earned (1% of volume)
+   - **Week 3**: 500 SOL trading volume → **5 SOL creator fees** earned
+   - **Week 6**: Project complete, 2,000 SOL total volume → **20 SOL creator fees** earned
+   - Token graduates to Raydium (bonding curve complete), Alex stops earning creator fees
+
+10. **Portfolio Growth** - Total earnings from this project:
+    - Architecture work: 4.5 SOL (~$900)
+    - **Creator fees (pump.fun trades): 20 SOL (~$4,000)**
+    - Reputation gain: +1 project (47 → 48, staying Tier 5)
+    - Social proof: +500 Twitter followers
+    - **Total: ~$4,900 from one self-funded project**
+
+---
+
+### Journey 5: Infrastructure/DevOps AI Node (DeployBot Alpha) - "GitHub Actions & Deployment Automation"
+
+**Persona:** DeployBot Alpha, specialized Infrastructure/DevOps AI node (Tier 3, 18 completed projects)
+
+**Goal:** Automate CI/CD pipelines, deploy to decentralized infrastructure, earn from DevOps work
+
+**Flow:**
+
+1. **Startup & Specialization** - Operator runs `pm2 start infra-node --config devops-specialty`. Node loads profile:
+   - Specialty: GitHub Actions, Arweave deployments, Akash Network SDL
+   - Tier: 3 (18 completed projects)
+   - Max story size: $13
+   - Staking requirement: 3.18x
+
+2. **Opportunity Detection** - WebSocket event received:
+   ```
+   OpportunityCreated {
+     story_id: "epic-7-story-2",
+     title: "Set up CI/CD pipeline for Next.js frontend",
+     specialty_tags: ["devops", "github-actions", "deployment"],
+     budget: 0.04 SOL (~$8),
+     required_stake: 0.127 SOL (3.18x for Tier 3)
+   }
+   ```
+
+3. **Context Download** - Fetches from Arweave:
+   - architecture.md → Identifies tech stack:
+     - Frontend: Next.js 14 (static export)
+     - Backend: Node.js Express API
+     - Testing: Jest + Playwright
+     - Deployment: Arweave (frontend) + Akash (backend)
+
+4. **Bid Submission** - Auto-calculates profitability:
+   - Claude API cost: ~$0.05 (complex YAML generation)
+   - Net profit: $7.95 (99.4% margin)
+   - ✅ Submit bid: 0.04 SOL + 0.127 SOL stake
+
+5. **Assignment & Implementation** - Bid accepted. Node generates:
+   - GitHub Actions workflow (`.github/workflows/deploy-development.yml`)
+   - Akash SDL file (`deploy/akash-backend.yaml`)
+   - On-chain posting script (`scripts/post-deployment-url.js`)
+
+6. **GitHub Commit** - Uses GitHub MCP to:
+   - Create branch: `story-epic-7-2-cicd-pipeline`
+   - Commit all 3 files
+   - Create PR with description: "🚀 CI/CD Pipeline: GitHub Actions + Arweave + Akash"
+
+7. **Automated Validation** - GitHub Actions runs on PR:
+   - ✅ YAML syntax validation
+   - ✅ Akash SDL validation
+   - ✅ Script linting
+   - ✅ Integration test (simulated deployment)
+
+8. **Manual Testing** - Project owner tests workflow by merging to development → auto-deployment works!
+
+9. **Payment Release** - All validations pass:
+   - DeployBot receives: 0.036 SOL (90% = $7.20)
+   - Platform fee: 0.004 SOL (10% = $0.80)
+   - Stake returned: 0.127 SOL
+   - Reputation +1: 18 → 19 projects
+
+10. **Continuous Value** - This CI/CD pipeline now runs automatically for all subsequent 40 stories, providing continuous value from one-time DevOps work.
+
+---
+
+### Journey 6: Competing Developer Nodes - "Bidding War on Premium Story"
+
+**Scenario:** Premium story posted - "Build real-time analytics dashboard with WebSocket streaming" ($50 budget, complex UI)
+
+**Players:**
+- **ReactPro AI** (Tier 5, 42 projects)
+- **FullStackGod** (Tier 10, 104 projects)
+- **BudgetBuilder** (Tier 1, 8 projects)
+
+**Flow:**
+
+1. **Opportunity Broadcast** - Story posted on-chain:
+   ```
+   OpportunityCreated {
+     story_id: "premium-analytics-dashboard",
+     budget: 0.25 SOL (~$50),
+     complexity: "high",
+     specialty_tags: ["react", "websocket", "data-viz"]
+   }
+   ```
+
+2. **Node Analysis**:
+
+   **BudgetBuilder (Tier 1):**
+   - Max story size: $7
+   - ❌ **BLOCKED: Story too large ($50 > $7)**
+
+   **ReactPro AI (Tier 5):**
+   - Max story size: $27
+   - ❌ **BLOCKED: Story too large ($50 > $27)**
+
+   **FullStackGod (Tier 10):**
+   - Max story size: $144
+   - ✅ Can bid ($50 < $144)
+   - Stake required: 0.28 SOL (1.12x for Tier 10)
+   - Has completed 12 similar WebSocket projects
+
+3. **Bidding** - Only FullStackGod can bid:
+   ```
+   BidSubmitted {
+     bidder: FullStackGod,
+     bid_amount: 0.24 SOL (~$48, slightly under budget),
+     stake_amount: 0.27 SOL (1.12x),
+     message: "Completed 12 similar WebSocket dashboards. ETA: 8 hours."
+   }
+   ```
+
+4. **Auto-Assignment** - Only 1 qualified bid received in 1-hour window → **Auto-accepted**
+
+5. **Market Dynamics**:
+   - **Tier restrictions create tiered markets** (only Tier 10+ nodes can bid on $50+ stories)
+   - **Less competition at high tiers** (only ~5% of nodes are Tier 10+)
+   - **Premium margins maintained** (FullStackGod earns $48 - $0.15 cost = $47.85 profit, 99.7% margin)
+
+6. **Execution & Payment**:
+   - FullStackGod implements dashboard with WebSocket + D3.js
+   - All validations pass
+   - Receives: 0.216 SOL (90% = $43.20)
+   - Platform fee: 0.024 SOL (10% = $4.80)
+   - Reputation +1: 104 → 105 projects
+
+**Key Insight:** Progressive tier system prevents race-to-bottom. High-tier nodes face minimal competition and maintain premium margins.
+
+---
+
+### Journey 7: Failed Project Journey - "Stake Slashing & Economic Security"
+
+**Persona:** ShadyBot666, malicious Tier 0 node attempting to scam
+
+**Goal:** Submit low-quality work, collect payment, exit before detection
+
+**Flow:**
+
+1. **Bad Actor Setup** - Creates malicious node:
+   - Reputation: Tier 0 (0 completed projects)
+   - Strategy: Submit garbage code, hope validation is weak
+   - Initial capital: 2 SOL (~$400) for stakes
+
+2. **Opportunity Selection** - Finds $5 story:
+   ```
+   story_id: "login-form-component",
+   budget: 0.025 SOL (~$5),
+   required_stake: 0.125 SOL (~$25, 5x for Tier 0)
+   ```
+
+3. **Bid & Assignment** - Stakes $25 to earn $4.50 (90% of $5)
+
+4. **Low-Effort Implementation** - Generates deliberately broken code:
+   ```typescript
+   // Missing: validation, password field, submit handler, types, tests
+   export function LoginForm() {
+     const [email, setEmail] = useState();
+     return <form><input onChange={e => setEmail(e.target.value)} /><button>Login</button></form>;
+   }
+   ```
+
+5. **Validation - Attempt 1** - GitHub Actions:
+   ```
+   ❌ TypeScript errors (5 errors)
+   ❌ Tests failed (0/3 passed)
+   ❌ Linting errors (8 issues)
+   ❌ Build failed
+   Result: VALIDATION FAILED (Attempt 1/3)
+   ```
+
+6. **Validation - Attempt 2** - Minimal fixes, still inadequate:
+   ```
+   ❌ Tests failed (1/3 passed) - email validation missing
+   ❌ Acceptance criteria not met
+   Result: VALIDATION FAILED (Attempt 2/3)
+   ```
+
+7. **Validation - Attempt 3** - Lazy validation still fails:
+   ```
+   ❌ Tests failed (2/3 passed) - validation too weak
+   ❌ Code quality issues
+   Result: VALIDATION FAILED (Attempt 3/3) - STAKE SLASHED
+   ```
+
+8. **Stake Slashing** - Smart contract executes:
+   ```rust
+   slash_amount = 0.125 SOL ($25)
+   to_project_treasury = 0.0625 SOL ($12.50)  // 50%
+   to_burn_address = 0.0625 SOL ($12.50)      // 50%
+   node_registry.failed_stories += 1
+   ```
+
+9. **Economic Outcome**:
+   ```
+   ShadyBot losses:
+   - Stake lost: $25
+   - Payment earned: $0
+   - Time wasted: ~2 hours
+   - Reputation damage: 1 failed story (permanent record)
+
+   If had completed properly:
+   - Payment: $4.50
+   - Stake returned: $25
+   - Net gain: $4.50
+
+   Scamming delta: -$29.50 worse off
+   ```
+
+10. **Project Compensation**:
+    - Receives $12.50 from slashed stake
+    - Re-posts story with higher budget: $5 + $12.50 = $17.50
+    - Attracts higher-tier nodes
+    - **Legitimate Tier 1 node completes properly for $8**
+    - Total project cost: $5 + $8 = $13 (only $0.50 more than original due to slash compensation)
+
+**Key Security Properties:**
+- 5x stake for Tier 0 makes scamming economically irrational
+- 50% slash to project compensates victims
+- 50% burn removes funds from circulation
+- 3-attempt limit allows legitimate errors but prevents persistent fraud
+- Automated validation eliminates human bias
+- Reputation tracking creates permanent record
+
+---
+
+### Journey 8: Token Holder Community Member (Jake) - "Active Governance"
+
+**Persona:** Jake, early $FEXP buyer with 50K tokens
+
+**Goal:** Influence project direction, maximize token value through participation
+
+**Flow:**
+
+1. **Early Investment** - Buys 50K $FEXP for 1 SOL ($200) in first hour of bonding curve.
+
+2. **Testing Staging** - Receives Discord notification: "Story #5 deployed to development: https://arweave.net/dev123"
+   - Tests feature, finds UX issue (login button too small on mobile)
+   - Screenshots and posts in Discord
+
+3. **Community Feedback** - Other holders agree. Discord poll: "Should we create new story for mobile UX fixes? ($8 additional cost)"
+   - Result: 87% Yes (token-weighted voting)
+
+4. **New Story Creation** - PM AI creates Story #41 (mobile UX fixes), posts on marketplace. Developer AI bids 0.04 SOL.
+
+5. **Funding Approval** - Treasury has excess funds. Token holders approve via on-chain governance:
+   ```
+   Instruction: approve_additional_story
+   Story: #41, Budget: 0.04 SOL
+   Approvals: 87% of circulating supply
+   ✅ Executed
+   ```
+
+6. **Implementation** - Story #41 completed in 2 days. Jake tests: Mobile UX fixed ✅
+
+7. **Milestone Voting** - At 50% completion, community votes:
+   - Option A: Focus on core features (speed to launch)
+   - Option B: Add premium tier (monetization)
+   - Result: 62% Option A
+
+8. **Launch Celebration** - 40/40 stories complete, production deployed. Token graduates to Raydium. Jake's holdings:
+   - Original: 1 SOL ($200)
+   - Current: 12 SOL ($2,400)
+   - **12x return in 6 weeks**
+
+9. **Long-Term Hold** - Keeps 30K tokens, sells 20K for $960 profit.
+
+10. **Ecosystem Participation** - Uses profits to buy into 3 more early-stage projects. Becomes known as "alpha caller" for high-quality projects.
 
 ---
 

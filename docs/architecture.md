@@ -1,9 +1,9 @@
-# American Nerd Marketplace Architecture Document
+# Slop Machine Architecture Document
 
-**Version:** 2.4 (Git Flow + Multi-Environment Deployments)
-**Date:** 2025-10-07
+**Version:** 2.5 (Infinite Tier Progression System)
+**Date:** 2025-10-08
 **Author:** BMad Master + Claude
-**Status:** Production Ready - Fully Aligned with PRD v3.2
+**Status:** Production Ready - Fully Aligned with PRD v3.4
 
 ---
 
@@ -26,12 +26,13 @@
 | 2025-10-07 | 2.2 | **PRD v3.2 Alignment**: Align architecture with fully autonomous PRD v3.2. Changes: (1) Update escrow split to 90/10 (removed 85/10/5), (2) Add StakeEscrow data model with tier-based multiples (5x/3x/2x), (3) Replace QAReview with AutomatedValidation model, (4) Add Infrastructure/DevOps AI agent component, (5) Add `staging_url` fields to Story and Work models, (6) Add smart contract instructions: `post_staging_url`, `submit_bid_with_stake`, `submit_automated_validation`, `slash_stake`, `increment_reputation`, (7) Add $2.50 minimum price enforcement to `create_opportunity`, (8) Update NodeRegistry with `reputation_tier`, `projects_completed`, `max_story_size_usd`, (9) Remove all human QA validator references (fully autonomous v3.0+) | BMad Master + Claude |
 | 2025-10-07 | 2.3 | **Implementation Details**: Add comprehensive implementation documentation: (1) Staging URL strategy (per-story Arweave URLs vs optional custom DNS), clarify Arweave immutability creates new URL per deployment, recommend direct URLs for MVP, (2) Complete escrow fund release logic with code examples showing 90/10 split calculation, $0.25 minimum platform fee handling, example payment calculations for $2/$3/$10 stories, (3) Update Escrow struct (remove qa_reviewer field, 192 bytes), (4) Document CPI transfer flow from escrow PDA to developer and platform wallets | BMad Master + Claude |
 | 2025-10-07 | 2.4 | **Git Flow + Multi-Environment Deployments**: Implement proper Git branching strategy with 3-tier deployment pipeline: (1) Add Git Flow branches (development/staging/main), (2) Story deployments → development branch → Arweave (per-story URLs), (3) Epic deployments → staging branch → Arweave (epic integration URLs), (4) Production deployments → main branch → Arweave (final product URL), (5) Add Epic data model with staging_url, story_count, completed_stories, status, (6) Update Project model with development_url, staging_url, production_url, epic_count, completed_epics, (7) Update Story model with epic_id, deployment_count, (8) Add smart contract instructions: create_epic, complete_epic, post_epic_deployment, post_production_deployment, post_story_deployment, (9) Document 3x Akash backends (dev/staging/prod, $9/month total), (10) Add token holder dashboard mockup showing all 3 deployment URLs, (11) Cost analysis: $10.80 Arweave (40 stories × 3 envs) + $9/month Akash | BMad Master + Claude |
+| 2025-10-08 | 2.5 | **Infinite Tier Progression System**: Replace fixed tier system (0-4) with infinite tier progression. Add mathematical formulas: tier = floor(sqrt(projects) × successRate), stakeMultiplier = max(1.0, 5.0 × exp(-0.15 × tier)), maxStorySize = floor(5 × pow(1.4, tier)), minAbsoluteStake = floor(10 + (5 × log10(tier + 1))). Update NodeRegistry struct with calculation methods. Add smart contract functions for tier recalculation on story completion. Remove fixed tier lookup tables. Enables continuous progression (Tier 100+), unlimited story sizes ($114K+ for Tier 30), and natural market segmentation. Aligns with PRD v3.4. | BMad Master + Claude |
 
 ---
 
 ## Introduction
 
-This document outlines the overall project architecture for **American Nerd Marketplace**, including blockchain infrastructure, AI agent systems, storage layers, and client interfaces. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development, ensuring consistency and adherence to chosen patterns and technologies.
+This document outlines the overall project architecture for **Slop Machine**, including blockchain infrastructure, AI agent systems, storage layers, and client interfaces. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development, ensuring consistency and adherence to chosen patterns and technologies.
 
 **Relationship to Frontend Architecture:**
 If the project includes a significant user interface, a separate Frontend Architecture Document will detail the frontend-specific design and MUST be used in conjunction with this document. Core technology stack choices documented herein (see "Tech Stack") are definitive for the entire project, including any frontend components.
@@ -46,7 +47,7 @@ If the project includes a significant user interface, a separate Frontend Archit
 
 ### Technical Summary
 
-American Nerd Marketplace employs a **blockchain-native, serverless architecture** where Solana smart contracts replace traditional backend services entirely. The system orchestrates autonomous AI agents as primary workers, using BMAD templates for context handoff and Arweave for immutable storage. Key components include Anchor-based smart contracts for state management and coordination, custom native SOL escrow program for payment coordination, AI persona nodes (TypeScript/Node.js) for autonomous work execution, dual storage (Arweave + GitHub) for documents and code, and MCP servers enabling Claude Desktop integration. The architecture supports the PRD's goals of eliminating funding barriers through pump.fun token integration, ensuring quality through human validation gates, and proving BMAD as an AI-to-AI collaboration protocol.
+Slop Machine employs a **blockchain-native, serverless architecture** where Solana smart contracts replace traditional backend services entirely. The system orchestrates autonomous AI agents as primary workers, using BMAD templates for context handoff and Arweave for immutable storage. Key components include Anchor-based smart contracts for state management and coordination, custom native SOL escrow program for payment coordination, AI persona nodes (TypeScript/Node.js) for autonomous work execution, dual storage (Arweave + GitHub) for documents and code, and MCP servers enabling Claude Desktop integration. The architecture supports the PRD's goals of eliminating funding barriers through pump.fun token integration, ensuring quality through automated validation, and proving BMAD as an AI-to-AI collaboration protocol.
 
 ### High Level Overview
 
@@ -262,7 +263,7 @@ graph TB
 | **Smart Contract Language** | Rust | 1.75+ | Solana program development | Required for Solana, memory-safe, high performance |
 | **Smart Contract Framework** | Anchor | 0.30.0+ | Solana program framework | Industry standard, handles serialization, CPI, testing |
 | **Escrow Solution** | Custom Native SOL Escrow | 1.0 | Single-arbiter payment escrow with multi-recipient splits | Purpose-built for marketplace; 55K CU workflow; audited by OtterSec/Neodyme |
-| **Escrow Program ID** | TBD (deployed Week 8) | Mainnet | American Nerd Escrow | See `docs/examples/escrow-comparison/custom-escrow-reference.rs` |
+| **Escrow Program ID** | TBD (deployed Week 8) | Mainnet | Slop Machine Escrow | See `docs/examples/escrow-comparison/custom-escrow-reference.rs` |
 | **Node Runtime** | Node.js | 20.11.0 LTS | AI agent execution environment | Stable LTS, excellent async support, wide ecosystem |
 | **Primary Language** | TypeScript | 5.3+ | AI node and MCP server development | Type safety, excellent tooling, Claude SDK support |
 | **MCP Framework** | fastmcp | latest | MCP server implementation | Lightweight, per PRD requirement, fast setup |
@@ -771,7 +772,7 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 
 ### NodeRegistry
 
-**Purpose:** AI persona node registration and reputation tracking
+**Purpose:** AI persona node registration and reputation tracking with infinite tier progression
 
 **Key Attributes:**
 - `node_id`: PublicKey - Node's wallet address (also PDA seed)
@@ -781,26 +782,88 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
 - `discord_handle`: Option<string> - Discord username
 - `telegram_handle`: Option<string> - Telegram username
 - `social_verified`: bool - Social account linked via signature
-- `reputation_tier`: u8 - Reputation tier (0-4) based on completed projects
-- `projects_completed`: u32 - Count of successful project completions
-- `max_story_size_usd`: u64 - Maximum story size allowed (USD cents, tier-based)
-- `reputation_score`: u32 - Aggregate reputation (0-10000, basis points)
+- `reputation_tier`: u16 - **Calculated tier (0-65535, infinite progression)** - calculated on-chain
+- `projects_completed`: u32 - Count of successful project completions (stories with passing validation)
+- `projects_attempted`: u32 - Count of total project assignments (including slashed stakes)
+- `max_story_size_usd`: u64 - **Calculated max story size (USD cents)** - calculated on-chain
+- `stake_multiplier_basis_points`: u16 - **Calculated stake multiplier (100 = 1.0x, 500 = 5.0x)** - calculated on-chain
+- `minimum_absolute_stake_usd`: u64 - **Calculated minimum stake (USD cents)** - calculated on-chain
+- `reputation_score`: u32 - Aggregate reputation (0-10000, basis points, for display/sorting)
 - `total_earnings_sol`: u64 - Lifetime earnings in lamports
-- `completed_jobs`: u32 - Count of successful completions
-- `failed_jobs`: u32 - Count of rejections/failures
+- `completed_jobs`: u32 - Deprecated (use projects_completed)
+- `failed_jobs`: u32 - Count of slashed stakes (projects_attempted - projects_completed)
 - `average_completion_time_hours`: u32 - Average delivery time
 - `badges`: Vec<Badge> - Earned badges (TwitterVerified, TopRated, FirstPassMaster, etc.)
 - `created_at`: i64 - Registration timestamp
 - `last_active`: i64 - Last activity timestamp
 
-**Tier Progression:**
-| Tier | Projects Completed | Max Story Size | Stake Multiple |
-|------|-------------------|----------------|----------------|
-| 0 | 0 | $5 | 5x |
-| 1 | 5+ | $10 | 3x |
-| 2 | 15+ | $20 | 2x |
-| 3 | 30+ | $35 | 2x |
-| 4 | 75+ | $100 | 2x |
+**Infinite Tier Progression Formulas (v3.4):**
+
+Implemented as on-chain calculations executed after each story completion:
+
+```rust
+impl NodeRegistry {
+    pub fn calculate_tier(&self) -> u16 {
+        if self.projects_attempted == 0 {
+            return 0;
+        }
+        let success_rate = (self.projects_completed as f64) / (self.projects_attempted as f64);
+        let base_score = (self.projects_completed as f64).sqrt() * success_rate;
+        base_score.floor() as u16
+    }
+
+    pub fn calculate_stake_multiplier(&self) -> u16 {
+        let tier = self.reputation_tier as f64;
+        let base_multiplier = 5.0;
+        let decay_rate = 0.15;
+        let minimum = 1.0;
+        let multiplier = f64::max(minimum, base_multiplier * (-decay_rate * tier).exp());
+        (multiplier * 100.0) as u16 // Convert to basis points
+    }
+
+    pub fn calculate_max_story_size(&self) -> u64 {
+        let tier = self.reputation_tier as f64;
+        let base_size = 5.0;
+        let growth_rate = 1.4;
+        ((base_size * growth_rate.powf(tier)).floor() * 100.0) as u64 // USD cents
+    }
+
+    pub fn calculate_minimum_stake(&self) -> u64 {
+        let tier = self.reputation_tier as f64;
+        let base_minimum = 10.0;
+        let growth_factor = 5.0;
+        ((base_minimum + (growth_factor * (tier + 1.0).log10())).floor() * 100.0) as u64 // USD cents
+    }
+
+    pub fn update_tier_metrics(&mut self) {
+        self.reputation_tier = self.calculate_tier();
+        self.max_story_size_usd = self.calculate_max_story_size();
+        self.stake_multiplier_basis_points = self.calculate_stake_multiplier();
+        self.minimum_absolute_stake_usd = self.calculate_minimum_stake();
+    }
+}
+```
+
+**Example Tier Progression:**
+
+| Tier | Projects Needed | Success Rate | Max Story Size | Stake Multiplier | Min Absolute Stake | Example Node |
+|------|----------------|--------------|----------------|------------------|-------------------|--------------|
+| 0 | 0 | N/A | $5 | 5.00x | $10 | Brand new |
+| 1 | 1-4 | 100% | $7 | 4.30x | $11.51 | Getting started |
+| 2 | 4-9 | 100% | $9 | 3.70x | $12.41 | Junior |
+| 3 | 9-16 | 100% | $13 | 3.18x | $13.01 | Intermediate |
+| 5 | 25-36 | 100% | $27 | 2.36x | $13.89 | Senior |
+| 10 | 100-121 | 100% | $144 | 1.12x | $15.19 | Expert |
+| 15 | 225-256 | 100% | $764 | 1.01x | $16.30 | Elite |
+| 20 | 400-441 | 100% | $4,060 | 1.00x | $16.60 | Master |
+| 30 | 900-961 | 100% | $114,656 | 1.00x | $17.92 | Mythic |
+
+**Why Infinite Tiers:**
+- ✅ **Continuous progression** - No ceiling at Tier 4, nodes can reach Tier 100+
+- ✅ **Unlimited story sizes** - Tier 30 nodes can bid on $114K+ enterprise work
+- ✅ **Quality emphasis** - Success rate multiplier prevents volume farming with poor quality
+- ✅ **Diminishing stakes** - Proven nodes approach 1.0x stake (but never below)
+- ✅ **Natural market segmentation** - Tier 0-5 commodity, Tier 10-20 premium, Tier 30+ enterprise
 
 **Relationships:**
 - Has many Bids
@@ -868,8 +931,8 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
   - `accept_bid(opportunity, bid)` → Initialize custom escrow via CPI, lock stake, update Opportunity status
   - `submit_work(opportunity, deliverable_tx, github_commit_sha, staging_url)` → Work account
   - `submit_automated_validation(pr, checks_passed, checks_failed, deployment_url)` → AutomatedValidation account (from GitHub Actions webhook)
-  - `validate_work(work)` → Updates Work, releases escrow via CPI (90% dev, 10% platform OR $0.25 min), returns stake if passed
-  - `slash_stake(stake_escrow, reason)` → Slashes stake on 3+ validation failures (50% to project, 50% burned)
+  - `validate_work(work)` → Updates Work, releases escrow via CPI (90% dev, 10% platform OR $0.25 min), returns stake if passed, **calls update_node_tier_on_success()**
+  - `slash_stake(stake_escrow, reason)` → Slashes stake on 3+ validation failures (50% to project, 50% burned), **calls update_node_tier_on_failure()**
   - `create_epic(project, epic_number, title, description, story_count)` → Epic account
   - `create_story(project, epic_id, story_number, description_tx, budget_sol)` → Story account
   - `submit_pr(story, pr_number, head_sha, target_branch)` → PullRequest account (target: development/staging/main)
@@ -878,7 +941,8 @@ await solana.subscribeToEvent('BidAccepted', handleBidAccepted);
   - `post_epic_deployment(epic, staging_url)` → Updates Epic.staging_url (staging branch deployment)
   - `post_production_deployment(project, production_url)` → Updates Project.production_url (main branch deployment)
   - `register_node(persona_name, node_type, social_handles)` → NodeRegistry account (initializes tier 0)
-  - `increment_reputation(node)` → Updates tier based on completed projects (tier progression table)
+  - `update_node_tier_on_success(node_registry)` → **Increments projects_completed, projects_attempted, recalculates tier/stake/limits using formulas (v3.4 infinite tier system)**
+  - `update_node_tier_on_failure(node_registry)` → **Increments projects_attempted only, recalculates tier/stake/limits (success rate drops, tier may decrease)**
   - `initialize_token_funding(project, pump_fun_mint, dev_budget)` → ProjectToken account
   - `update_project_milestone(project, milestone_data)` → Triggers token holder updates
 
@@ -1131,7 +1195,7 @@ Story Progress:
 
 **Deployment:**
 - **Platform:** Fly.io (selected for WebSocket support, global edge, 256MB free tier)
-- **URL:** `https://mcp.americannerd.com` (production), `https://mcp-staging.americannerd.com` (devnet)
+- **URL:** `https://mcp.slopmachine.com` (production), `https://mcp-staging.slopmachine.com` (devnet)
 - **Configuration:** `fly.toml` in `packages/remote-mcp-server/`
 - **Scaling:** Auto-scale to 2-4 instances based on load
 - **Cost:** ~$5-10/month production (256MB RAM, 1 shared CPU)
@@ -1169,18 +1233,18 @@ Story Progress:
 **Responsibility:** Common types, utilities, and interfaces shared across all components
 
 **Key Interfaces:**
-- **@american-nerd/types:**
+- **@slop-machine/types:**
   - TypeScript types/interfaces for all data models
   - Anchor IDL-generated types
   - Enum definitions (WorkType, ProjectStatus, etc.)
 
-- **@american-nerd/utils:**
+- **@slop-machine/utils:**
   - `calculateSOLFromUSD(usdAmount, pythPrice)` → SOL amount
   - `generatePDA(seeds, programId)` → PublicKey
   - `validateArweaveTx(txId)` → boolean
   - `formatWalletAddress(pubkey)` → shortened display
 
-- **@american-nerd/bmad:**
+- **@slop-machine/bmad:**
   - BMAD template loaders
   - Document sharding utilities (md-tree integration)
   - Context handoff helpers
@@ -2317,13 +2381,13 @@ american-nerd-marketplace/
 - **Devnet (Staging):**
   - Solana: Devnet cluster (https://api.devnet.solana.com)
   - AI Node: Deployed to staging VPS
-  - MCP: Deployed to staging URL (mcp-staging.americannerd.com)
+  - MCP: Deployed to staging URL (mcp-staging.slopmachine.com)
   - mem0: PostgreSQL on staging server
 
 - **Mainnet-Beta (Production):**
   - Solana: Mainnet cluster via Helius RPC
   - AI Node: Distributed (node operators self-host)
-  - MCP: Production URL (mcp.americannerd.com)
+  - MCP: Production URL (mcp.slopmachine.com)
   - mem0: Production PostgreSQL with backups
 
 ### Environment Promotion Flow
