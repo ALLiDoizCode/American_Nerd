@@ -111,12 +111,17 @@ jobs:
           key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
 
       - name: Install AVM
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/coral-xyz/anchor avm --force
 
       - name: Install Anchor via AVM
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
           avm install ${{ env.ANCHOR_VERSION }}
           avm use ${{ env.ANCHOR_VERSION }}
+
+      - name: Add AVM to PATH
+        run: echo "$HOME/.avm/bin" >> $GITHUB_PATH
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -206,12 +211,17 @@ jobs:
           key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
 
       - name: Install AVM
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/coral-xyz/anchor avm --force
 
       - name: Install Anchor via AVM
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
           avm install ${{ env.ANCHOR_VERSION }}
           avm use ${{ env.ANCHOR_VERSION }}
+
+      - name: Add AVM to PATH
+        run: echo "$HOME/.avm/bin" >> $GITHUB_PATH
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
