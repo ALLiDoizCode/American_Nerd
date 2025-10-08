@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+pub mod state;
+
 // Placeholder program ID - will be updated after deployment
 declare_id!("DoxwpkBr2cNu2NYxWEZjopYtZwHzQPJuzZFasinMAXKm");
 
