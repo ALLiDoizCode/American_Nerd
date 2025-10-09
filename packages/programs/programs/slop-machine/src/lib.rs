@@ -66,7 +66,12 @@ pub mod slop_machine {
         budget_usd: f64,
         requirements_arweave_tx: String,
     ) -> Result<()> {
-        instructions::create_opportunity::handler(ctx, work_type, budget_usd, requirements_arweave_tx)
+        instructions::create_opportunity::handler(
+            ctx,
+            work_type,
+            budget_usd,
+            requirements_arweave_tx,
+        )
     }
 
     pub fn accept_bid(ctx: Context<AcceptBid>) -> Result<()> {

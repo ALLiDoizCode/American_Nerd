@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
 use crate::errors::ErrorCode;
 use crate::state::{Opportunity, OpportunityStatus, Project, WorkType};
 use crate::utils::oracle::usd_to_lamports;
+use anchor_lang::prelude::*;
 
 /// Minimum opportunity payment in USD cents ($2.50)
 const MIN_PAYMENT_USD_CENTS: f64 = 250.0;
@@ -56,10 +56,8 @@ pub fn handler(
     )?;
 
     // Get current SOL/USD price for reference
-    let price_data = crate::utils::oracle::get_sol_price_usd(
-        &ctx.accounts.pyth_price_feed,
-        &clock,
-    )?;
+    let price_data =
+        crate::utils::oracle::get_sol_price_usd(&ctx.accounts.pyth_price_feed, &clock)?;
 
     // Map work_type enum
     let work_type_enum = match work_type {

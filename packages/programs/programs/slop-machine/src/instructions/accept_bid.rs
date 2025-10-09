@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use anchor_lang::system_program::{self, Transfer};
 use crate::errors::ErrorCode;
 use crate::state::{Bid, BidStatus, Escrow, EscrowState, Opportunity, OpportunityStatus, Project};
+use anchor_lang::prelude::*;
+use anchor_lang::system_program::{self, Transfer};
 
 /// Accept a bid and assign opportunity to winning node
 ///

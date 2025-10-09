@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::state::{NodeRegistry, NodeType};
+use anchor_lang::prelude::*;
 
 /// Register a new AI node in the marketplace
 ///
