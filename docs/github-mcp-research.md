@@ -714,7 +714,7 @@ export class GitHubMCPService {
 
     this.client = new Client(
       {
-        name: 'american-nerd-ai-agent',
+        name: 'slop-machine-ai-agent',
         version: '1.0.0'
       },
       {
@@ -1309,7 +1309,7 @@ import { GitHubMCPService } from '../../src/services/github-mcp.service';
 describe('GitHub Workflow Integration', () => {
   let githubMCP: GitHubMCPService;
   const testRepo = {
-    owner: 'american-nerd-test',
+    owner: 'slop-machine-test',
     repo: 'integration-tests'
   };
 

@@ -1,0 +1,241 @@
+# GitHub Actions Workflow: Auto-Refill AKT Wallets
+#
+# This workflow automatically checks node operator AKT balances every 6 hours
+# and triggers SOL→AKT swaps when balances fall below threshold.
+#
+# Use Cases:
+# - Node operator auto-refill (prevent deployment failures)
+# - Platform treasury management
+# - Multi-node fleet balance monitoring
+
+name: Auto-Refill AKT Wallets
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_refill:
+        description: 'Force refill even if balance is sufficient'
+        required: false
+        type: boolean
+        default: false
+
+  # Trigger on deployment success (after Akash deployments)
+  workflow_run:
+    workflows: ["Deploy to Akash"]
+    types:
+      - completed
+
+env:
+  NODE_VERSION: '20'
+  AKT_THRESHOLD: '10' # Minimum AKT balance before refill
+  MAX_SWAP_AMOUNT_SOL: '0.5' # Maximum SOL to swap per refill
+
+jobs:
+  check-and-refill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install rango-sdk-basic @solana/web3.js @cosmjs/stargate
+
+      - name: Check node balances
+        id: check_balances
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          COSMOS_RPC_URL: ${{ secrets.COSMOS_RPC_URL }}
+          NODE_WALLETS_JSON: ${{ secrets.NODE_WALLETS_JSON }}
+        run: |
+          node -e "
+          const fs = require('fs');
+          const { Connection } = require('@solana/web3.js');
+          const { StargateClient } = require('@cosmjs/stargate');
+
+          (async () => {
+            // Parse node wallets from secrets
+            const wallets = JSON.parse(process.env.NODE_WALLETS_JSON);
+            const solConn = new Connection(process.env.SOLANA_RPC_URL);
+
+            const needsRefill = [];
+
+            for (const wallet of wallets) {
+              // Check AKT balance via Cosmos RPC
+              const cosmosClient = await StargateClient.connect(process.env.COSMOS_RPC_URL);
+              const balance = await cosmosClient.getBalance(wallet.cosmosAddress, 'uakt');
+              const aktBalance = parseInt(balance.amount) / 1e6;
+
+              console.log(\`Node \${wallet.nodeId}: \${aktBalance} AKT\`);
+
+              if (aktBalance < parseFloat(process.env.AKT_THRESHOLD)) {
+                needsRefill.push({
+                  nodeId: wallet.nodeId,
+                  aktBalance,
+                  solAddress: wallet.solAddress,
+                  cosmosAddress: wallet.cosmosAddress
+                });
+              }
+            }
+
+            // Output for next step
+            fs.writeFileSync('refill_list.json', JSON.stringify(needsRefill, null, 2));
+            console.log('::set-output name=needs_refill::' + (needsRefill.length > 0));
+            console.log('::set-output name=refill_count::' + needsRefill.length);
+          })();
+          "
+
+      - name: Execute refill swaps
+        if: steps.check_balances.outputs.needs_refill == 'true'
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          RANGO_API_KEY: ${{ secrets.RANGO_API_KEY }}
+          TREASURY_SOLANA_KEY: ${{ secrets.TREASURY_SOLANA_KEY }}
+        run: |
+          node -e "
+          const fs = require('fs');
+          const { RangoClient } = require('rango-sdk-basic');
+          const { Connection, Keypair, Transaction } = require('@solana/web3.js');
+          const bs58 = require('bs58');
+
+          (async () => {
+            const refillList = JSON.parse(fs.readFileSync('refill_list.json', 'utf8'));
+            const rangoClient = new RangoClient(process.env.RANGO_API_KEY);
+            const solConn = new Connection(process.env.SOLANA_RPC_URL);
+            const treasury = Keypair.fromSecretKey(bs58.decode(process.env.TREASURY_SOLANA_KEY));
+
+            const results = [];
+
+            for (const node of refillList) {
+              try {
+                console.log(\`Refilling node \${node.nodeId}...\`);
+
+                // Calculate swap amount
+                const neededAKT = (parseFloat(process.env.AKT_THRESHOLD) * 1.5) - node.aktBalance;
+                const solAmount = Math.min(neededAKT / 5, parseFloat(process.env.MAX_SWAP_AMOUNT_SOL)); // Rough rate + cap
+
+                // Get route
+                const routeRequest = {
+                  from: { blockchain: 'SOLANA', symbol: 'SOL', address: null },
+                  to: { blockchain: 'COSMOS', symbol: 'AKT', address: null },
+                  amount: (solAmount * 1e9).toString(),
+                  slippage: 5.0
+                };
+
+                const route = await rangoClient.getBestRoute(routeRequest);
+
+                if (route.resultType !== 'OK') {
+                  console.error(\`No route for node \${node.nodeId}\`);
+                  continue;
+                }
+
+                // Execute swap
+                const swapRequest = {
+                  ...routeRequest,
+                  fromAddress: treasury.publicKey.toBase58(),
+                  toAddress: node.cosmosAddress,
+                  disableEstimate: false
+                };
+
+                const swap = await rangoClient.swap(swapRequest);
+                const tx = Transaction.from(Buffer.from(swap.tx.serializedMessage, 'base64'));
+                tx.sign(treasury);
+
+                const txHash = await solConn.sendRawTransaction(tx.serialize());
+                await solConn.confirmTransaction(txHash);
+
+                console.log(\`✓ Node \${node.nodeId} refilled: \${txHash}\`);
+
+                results.push({
+                  nodeId: node.nodeId,
+                  status: 'success',
+                  txHash,
+                  requestId: swap.requestId,
+                  solAmount,
+                  expectedAKT: parseFloat(route.route.outputAmount) / 1e6
+                });
+
+              } catch (error) {
+                console.error(\`✗ Node \${node.nodeId} failed:`, error);
+                results.push({ nodeId: node.nodeId, status: 'failed', error: error.message });
+              }
+            }
+
+            // Save results
+            fs.writeFileSync('refill_results.json', JSON.stringify(results, null, 2));
+          })();
+          "
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ -f refill_results.json ]; then
+            echo "=== Refill Results ==="
+            cat refill_results.json
+            echo ""
+
+            # Count successes and failures
+            SUCCESS_COUNT=$(jq '[.[] | select(.status=="success")] | length' refill_results.json)
+            FAILURE_COUNT=$(jq '[.[] | select(.status=="failed")] | length' refill_results.json)
+
+            echo "✓ Successful refills: $SUCCESS_COUNT"
+            echo "✗ Failed refills: $FAILURE_COUNT"
+
+            # Set job status
+            if [ "$FAILURE_COUNT" -gt 0 ]; then
+              echo "::warning::$FAILURE_COUNT node refills failed"
+            fi
+          else
+            echo "No refills needed"
+          fi
+
+      - name: Update database with costs
+        if: steps.check_balances.outputs.needs_refill == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Log swap costs to database for accounting
+          node scripts/log-swap-costs.js refill_results.json
+
+      - name: Send notifications
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'AKT auto-refill workflow failed! Check node balances manually.'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refill-results-${{ github.run_number }}
+          path: |
+            refill_list.json
+            refill_results.json
+          retention-days: 30
+
+# Secrets required in GitHub repository settings:
+#
+# SOLANA_RPC_URL: Helius/QuickNode Solana RPC endpoint
+# COSMOS_RPC_URL: Akash/Cosmos RPC endpoint
+# RANGO_API_KEY: Rango Exchange API key (optional)
+# TREASURY_SOLANA_KEY: Base58-encoded Solana private key with SOL funding
+# NODE_WALLETS_JSON: JSON array of node wallet addresses
+#   Format: [{"nodeId": "node-1", "solAddress": "...", "cosmosAddress": "akash1..."}]
+# DATABASE_URL: PostgreSQL connection string for cost logging
+# SLACK_WEBHOOK: Slack webhook URL for failure notifications

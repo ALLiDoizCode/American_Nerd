@@ -1,0 +1,23 @@
+[package]
+name = "slop-machine"
+version = "0.1.0"
+description = "Slop Machine Solana smart contracts"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "slop_machine"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+mainnet = []
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
+solana-program = "~2.1"

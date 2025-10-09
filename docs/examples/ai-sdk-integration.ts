@@ -108,7 +108,7 @@ class MCPClientService {
         });
 
         const client = new Client(
-          { name: 'american-nerd-ai', version: '1.0.0' },
+          { name: 'slop-machine-ai', version: '1.0.0' },
           { capabilities: {} }
         );
 
