@@ -2233,7 +2233,7 @@ The system uses **Solana account storage** for all on-chain state. Below are the
 ### Account Structure Definitions (Anchor/Rust)
 
 ```rust
-// programs/american-nerd/src/state/project.rs
+// programs/slop-machine/src/state/project.rs
 
 use anchor_lang::prelude::*;
 
@@ -2270,7 +2270,7 @@ pub enum FundingType {
 ```
 
 ```rust
-// programs/american-nerd/src/state/opportunity.rs
+// programs/slop-machine/src/state/opportunity.rs
 
 #[account]
 pub struct Opportunity {
@@ -2308,7 +2308,7 @@ pub enum OpportunityStatus {
 ```
 
 ```rust
-// programs/american-nerd/src/state/node_registry.rs
+// programs/slop-machine/src/state/node_registry.rs
 
 #[account]
 pub struct NodeRegistry {
@@ -2410,13 +2410,13 @@ pub enum Badge {
 ## Source Tree
 
 ```
-american-nerd-marketplace/
+slop-machine/
 ├── packages/
 │   ├── programs/                          # Solana smart contracts (Anchor)
 │   │   ├── Anchor.toml                    # Anchor configuration
 │   │   ├── Cargo.toml                     # Rust workspace config
 │   │   ├── programs/
-│   │   │   └── american-nerd/             # Main Solana program
+│   │   │   └── slop-machine/              # Main Solana program
 │   │   │       ├── Cargo.toml
 │   │   │       ├── Xargo.toml
 │   │   │       └── src/
@@ -2449,7 +2449,7 @@ american-nerd-marketplace/
 │   │   │           ├── errors.rs           # Custom error types
 │   │   │           └── utils.rs            # Helper functions
 │   │   ├── tests/                          # Anchor integration tests
-│   │   │   ├── american-nerd.spec.ts
+│   │   │   ├── slop-machine.spec.ts
 │   │   │   ├── project-workflow.spec.ts
 │   │   │   ├── story-workflow.spec.ts
 │   │   │   └── token-funding.spec.ts

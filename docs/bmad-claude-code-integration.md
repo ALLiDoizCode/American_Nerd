@@ -443,7 +443,7 @@ User: 2
 
 ```yaml
 project:
-  name: american-nerd-marketplace
+  name: slop-machine
   type: blockchain-native-marketplace
 
 # AI SDK Configuration

@@ -1,4 +1,4 @@
-# Claude Instructions for American Nerd Marketplace
+# Claude Instructions for Slop Machine
 
 ## BMAD Integration
 

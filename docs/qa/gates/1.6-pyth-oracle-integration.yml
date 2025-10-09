@@ -1,0 +1,115 @@
+# <!-- Powered by BMAD™ Core -->
+# Quality Gate Decision: Story 1.6 - Pyth Oracle Integration
+
+# Required fields
+schema: 1
+story: "1.6"
+story_title: "Pyth Oracle Integration"
+gate: CONCERNS
+status_reason: "Implementation quality is good with all AC code present, but test coverage critically insufficient (20% vs. 80% requirement) and build blocker prevents runtime verification. Cannot approve until tests executable and passing."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-10-09T00:00:00Z"
+
+# Waiver (not active)
+waiver:
+  active: false
+
+# Top Issues
+top_issues:
+  - id: "BUILD-001"
+    severity: high
+    finding: "Build fails with base64ct edition2024 dependency issue - prevents test execution"
+    suggested_action: "Upgrade to Rust nightly, wait for Rust 1.83+, or work with Pyth on dependency compatibility"
+    suggested_owner: dev
+
+  - id: "TEST-001"
+    severity: high
+    finding: "Unit test coverage ~20% vs. 80% requirement - only test stubs present for oracle module"
+    suggested_action: "Implement mock Pyth PriceData infrastructure and add unit tests for USD conversion, staleness validation, and error paths (estimated 4-6 hours)"
+    suggested_owner: dev
+
+  - id: "SEC-001"
+    severity: medium
+    finding: "Missing confidence interval validation - architecture recommends rejecting prices with confidence >10% of price"
+    suggested_action: "Add confidence check in get_sol_price_usd() to reject uncertain prices (optional, recommended for production)"
+    suggested_owner: dev
+
+# Risk Summary
+risk_summary:
+  totals:
+    critical: 0
+    high: 2
+    medium: 1
+    low: 0
+  highest:
+    score: 8
+    category: "Build Verification"
+    rationale: "Cannot verify runtime behavior or test suite due to dependency blocker"
+  recommendations:
+    must_fix:
+      - "Resolve pyth-sdk-solana dependency issue to enable build and test execution"
+      - "Implement unit tests to achieve minimum 80% coverage for oracle module"
+    monitor:
+      - "Track Rust 1.83 release for edition2024 stabilization"
+      - "Monitor Pyth SDK updates for dependency compatibility"
+
+# Extended fields
+
+quality_score: 65
+# Calculation: 100 - (20*0 FAILs) - (10*3 CONCERNS) - 5 (build blocker penalty)
+
+expires: "2025-10-23T00:00:00Z"  # 2 weeks from review
+
+evidence:
+  tests_reviewed: 7
+  # Integration tests: 5 test cases in pyth-oracle-integration.spec.ts
+  # Unit tests: 1 test stub + 1 test implemented (get_pyth_feed_address_devnet)
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # Code implementations present for AC1-7
+    ac_gaps: [8, 9, 10, 11, 12]  # AC8-12 (unit/integration tests) unverified due to build blocker
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: "Good baseline security (staleness, overflow, account validation) enhanced by QA refactoring (price range validation). Missing optional confidence interval check. Overall posture is acceptable but could be strengthened."
+  performance:
+    status: PASS
+    notes: "Excellent performance - single oracle call per bid, O(1) operations, no unbounded loops, minimal memory allocation"
+  reliability:
+    status: CONCERNS
+    notes: "Proper error handling present but untested due to build blocker. Panic risk mitigated by QA refactoring (.expect() with documentation)"
+  maintainability:
+    status: CONCERNS
+    notes: "Clean code structure and good documentation after QA refactoring. However, insufficient test coverage (20% vs. 80%) makes future refactoring risky"
+
+recommendations:
+  immediate:  # Must fix before marking story Done
+    - action: "Resolve build blocker: Try Rust nightly toolchain or await Rust 1.83+ for edition2024 support"
+      refs: ["packages/programs/Cargo.lock", "pyth-sdk-solana@0.10 dependency chain"]
+    - action: "Implement unit tests for oracle module to achieve 80% minimum coverage"
+      refs: ["packages/programs/programs/slop-machine/src/utils/oracle.rs:103-150"]
+    - action: "Execute full test suite (anchor test) and verify all tests pass"
+      refs: ["packages/programs/tests/pyth-oracle-integration.spec.ts", "packages/programs/tests/bidding-workflow.spec.ts"]
+
+  future:  # Recommended improvements for production
+    - action: "Add confidence interval validation (reject if confidence > 10% of price)"
+      refs: ["packages/programs/programs/slop-machine/src/utils/oracle.rs:65-77"]
+    - action: "Add integration test for stale price rejection (mock Clock for 61s+ staleness)"
+      refs: ["packages/programs/tests/pyth-oracle-integration.spec.ts"]
+    - action: "Consider reducing staleness threshold to 30s for production (Pyth updates every ~400ms)"
+      refs: ["packages/programs/programs/slop-machine/src/utils/oracle.rs:7"]
+
+# QA Refactoring Summary
+qa_improvements:
+  - "Added price range validation ($20-$500 SOL/USD sanity check) - oracle.rs:10-12, 73-76"
+  - "Replaced panic-prone .unwrap() with documented .expect() - oracle.rs:33-39"
+  - "Added explicit rounding (.ceil()) for f64→u64 type safety - oracle.rs:108"
+  - "Enhanced public API documentation with rustdoc - oracle.rs:86-92, 120-126"
+  - "Improved test organization documentation - pyth-oracle-integration.spec.ts:7-17"
+
+# Audit Trail
+history:
+  - at: "2025-10-09T00:00:00Z"
+    gate: CONCERNS
+    note: "Initial review - Good implementation quality but critical test coverage gap (20% vs. 80%) and build blocker prevents verification. QA performed 5 refactorings to improve security and documentation. Story requires test implementation before approval."

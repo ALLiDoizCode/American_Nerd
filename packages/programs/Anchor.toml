@@ -10,7 +10,7 @@ skip-lint = false
 slop_machine = "DoxwpkBr2cNu2NYxWEZjopYtZwHzQPJuzZFasinMAXKm"
 
 [programs.devnet]
-slop_machine = "DoxwpkBr2cNu2NYxWEZjopYtZwHzQPJuzZFasinMAXKm"
+slop_machine = "4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt"
 
 [programs.mainnet]
 slop_machine = "DoxwpkBr2cNu2NYxWEZjopYtZwHzQPJuzZFasinMAXKm"

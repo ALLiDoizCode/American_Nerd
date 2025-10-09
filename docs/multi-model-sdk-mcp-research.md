@@ -3,7 +3,7 @@
 **Research Date:** October 7, 2025
 **Researcher:** Claude Code (AI Agent)
 **Priority:** 🔴 CRITICAL - MVP Architecture Blocker
-**Project:** American Nerd Marketplace - AI Agent Runtime
+**Project:** Slop Machine - AI Agent Runtime
 
 ---
 
@@ -11,7 +11,7 @@
 
 ### Key Finding: Vercel AI SDK is Recommended ✅
 
-**Recommendation:** Use **Vercel AI SDK (v5)** as the primary multi-model SDK with MCP support for the American Nerd Marketplace AI agent runtime.
+**Recommendation:** Use **Vercel AI SDK (v5)** as the primary multi-model SDK with MCP support for the Slop Machine AI agent runtime.
 
 **Rationale:**
 1. ✅ **Native MCP Support**: Stable as of AI SDK 4.2+ (experimental_createMCPClient)
@@ -730,7 +730,7 @@ export class MCPClientService {
     for (const config of configs) {
       const transport = this.createTransport(config);
       const client = new Client(
-        { name: 'american-nerd-ai', version: '1.0.0' },
+        { name: 'slop-machine-ai', version: '1.0.0' },
         { capabilities: {} }
       );
 
@@ -874,7 +874,7 @@ const messages = [
 // Use server-provided prompt templates
 const prompt = await mcpClient.getClient('github').getPrompt({
   name: 'create_pr_template',
-  arguments: { repoName: 'american-nerd' }
+  arguments: { repoName: 'slop-machine' }
 });
 
 const result = await generateText({
@@ -1509,7 +1509,7 @@ export class MCPClientService {
           : new SSEClientTransport(new URL(config.url!));
 
         const client = new Client(
-          { name: 'american-nerd-ai', version: '1.0.0' },
+          { name: 'slop-machine-ai', version: '1.0.0' },
           { capabilities: {} }
         );
 
