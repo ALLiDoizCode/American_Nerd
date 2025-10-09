@@ -63,10 +63,52 @@ anchor test --skip-build
 
 ### Devnet
 
+**Current Devnet Deployment** (Story 1.8):
+- **Program ID**: `4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt`
+- **Network**: Solana Devnet
+- **Status**: ✅ Deployed (Slot 413451864)
+- **Explorer**: https://explorer.solana.com/address/4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt?cluster=devnet
+
 Deploy to Solana devnet:
 
 ```bash
+# 1. Get devnet SOL for deployment (requires ~3 SOL)
+solana airdrop 2 --url devnet
+# Repeat 2-3 times or use https://faucet.solana.com
+
+# 2. Build the program
+anchor build
+
+# 3. Deploy to devnet
 anchor deploy --provider.cluster devnet
+
+# 4. Copy the deployed program ID from output
+
+# 5. Update program ID in code
+# Edit programs/slop-machine/src/lib.rs: declare_id!("<PROGRAM_ID>")
+# Edit Anchor.toml: [programs.devnet] slop_machine = "<PROGRAM_ID>"
+
+# 6. Rebuild with updated program ID
+anchor build
+
+# 7. Sync IDL to devnet
+anchor idl init <PROGRAM_ID> --filepath target/idl/slop_machine.json --provider.cluster devnet
+
+# 8. Verify deployment
+solana program show <PROGRAM_ID> --url devnet
+```
+
+**Run Devnet Integration Tests**:
+
+```bash
+# Run comprehensive devnet integration tests
+anchor test --provider.cluster devnet --skip-build
+
+# Run with verbose output
+RUST_LOG=debug anchor test --provider.cluster devnet --skip-build
+
+# Run specific test file
+anchor test --provider.cluster devnet --skip-build --test devnet-integration
 ```
 
 ### Mainnet

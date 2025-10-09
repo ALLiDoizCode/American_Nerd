@@ -1,0 +1,172 @@
+# <!-- Powered by BMAD™ Core -->
+schema: 1
+story: "1.8a"
+story_title: "Deploy to Devnet + Integration Test Scaffolding"
+gate: PASS
+status_reason: "Story split by Product Owner decision (2025-10-09). Story 1.8a scope limited to deployment + test scaffolding. All 7 adjusted acceptance criteria met. Devnet deployment successful, integration test infrastructure excellent, documentation complete. Missing instructions moved to Story 1.8b."
+reviewer: "Quinn (Test Architect) + Sarah (PO)"
+updated: "2025-10-09T14:30:00Z"
+
+waiver: { active: false }
+
+story_split_info:
+  original_story: "1.8"
+  split_reason: "Scope ambiguity - original AC required full test execution but missing 3 prerequisite instructions (register_node, create_opportunity, accept_bid)"
+  po_decision: "Option 1 (Split Story) - Recommended by Quinn"
+  story_1_8a_scope: "Deployment + test scaffolding (COMPLETE)"
+  story_1_8b_scope: "Missing instructions + test execution (docs/stories/1.8b.story.md)"
+  split_date: "2025-10-09"
+
+top_issues:
+  - id: "RESOLVED-001"
+    severity: resolved
+    finding: "Story scope clarified via split - deployment and scaffolding complete"
+    resolution: "PO split story. Story 1.8a marked Ready for Done. Story 1.8b created for missing work."
+    resolved_by: po
+    resolved_date: "2025-10-09"
+
+  - id: "PERF-001"
+    severity: low
+    finding: "Test setup has 6-second sequential airdrop delays - potential CI/CD bottleneck"
+    suggested_action: "Defer to Story 1.8b - optimize during test execution phase"
+    suggested_owner: dev
+    blocking: false
+
+quality_score: 88
+expires: "2025-10-23T14:30:00Z"
+
+evidence:
+  tests_scaffolded: 34
+  tests_ready_for_execution: 34
+  unit_tests_passing: 67
+  devnet_program_deployed: true
+  program_id: "4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt"
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # All 7 adjusted ACs for Story 1.8a met
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Test wallets use Keypair.generate(), devnet-only config, no secrets exposed, proper wallet funding via faucet"
+  performance:
+    status: CONCERNS
+    notes: "Test setup has 6-second airdrop delays. Recommend optimization in Story 1.8b. Not blocking for scaffolding story."
+  reliability:
+    status: CONCERNS
+    notes: "Devnet faucet rate limits may cause test flakiness. Retry logic implemented. Monitor in Story 1.8b execution."
+  maintainability:
+    status: PASS
+    notes: "Excellent code structure, clear test descriptions, comprehensive comments, proper TypeScript types"
+
+acceptance_criteria_status:
+  ac_1_deploy_to_devnet:
+    status: PASS
+    evidence: "Program deployed to devnet: 4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt at slot 413451864"
+  ac_2_update_program_ids:
+    status: PASS
+    evidence: "Anchor.toml and lib.rs updated with devnet program ID, IDL synced to devnet"
+  ac_3_integration_test_scaffolding:
+    status: PASS
+    evidence: "Comprehensive test scaffolding created (500 lines, 10 suites, 34 tests covering all workflows)"
+  ac_4_test_infrastructure:
+    status: PASS
+    evidence: "Devnet configuration, wallet funding helpers, PDA derivation, airdrop retry logic all implemented"
+  ac_5_ready_for_execution:
+    status: PASS
+    evidence: "Test structure ready for execution once missing instructions implemented in Story 1.8b"
+  ac_6_devnet_address_documented:
+    status: PASS
+    evidence: "README.md updated with devnet program ID, explorer link, and testing instructions"
+  ac_7_unit_tests_passing:
+    status: PASS
+    evidence: "All 67 unit tests passing (Stories 1.1-1.7), zero regressions"
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 1  # Airdrop delays (non-blocking)
+  highest: low
+  recommendations:
+    future:
+      - action: "Optimize airdrop delays in Story 1.8b (pre-funded wallets or parallel airdrops)"
+        priority: P2
+        estimated_effort: "2-3 hours"
+      - action: "Configure Helius/Alchemy devnet RPC in Story 1.8b to avoid rate limits"
+        priority: P2
+        estimated_effort: "1 hour"
+      - action: "Add automated devnet testing to GitHub Actions (post-1.8b)"
+        priority: P3
+        estimated_effort: "4-6 hours"
+
+recommendations:
+  immediate:
+    - action: "Story 1.8a: Mark as Done (all ACs met for adjusted scope)"
+      refs: ["docs/stories/1.8a.story.md"]
+      priority: P0
+      blocking: false
+
+    - action: "Story 1.8b: Prioritize for next sprint (implement missing instructions)"
+      refs: ["docs/stories/1.8b.story.md"]
+      priority: P0
+      blocking: false
+      estimated_effort: "16-24 dev hours"
+
+  future:
+    - action: "After Story 1.8b completion: Re-run full integration test suite on devnet"
+      refs: ["packages/programs/tests/devnet-integration.spec.ts"]
+      priority: P1
+      estimated_effort: "4-6 hours"
+
+strengths:
+  - "Successful devnet deployment with proper IDL sync"
+  - "Comprehensive test scaffolding (500 lines, 10 suites, covers all planned workflows)"
+  - "All 67 unit tests passing - zero regressions"
+  - "Excellent documentation in README.md with devnet deployment instructions"
+  - "High-quality test infrastructure (airdrop retry logic, proper PDA derivation)"
+  - "Security best practices followed (no secrets exposed, devnet-only config)"
+  - "Clear scope definition after story split"
+
+technical_debt:
+  - debt: "Airdrop delays in test setup (6 seconds sequential)"
+    priority: LOW
+    cost: LOW
+    impact: "Slow test startup, potential CI/CD timeout issues"
+    mitigation: "Defer optimization to Story 1.8b execution phase"
+
+  - debt: "Missing instructions (register_node, create_opportunity, accept_bid)"
+    priority: HIGH
+    cost: HIGH
+    impact: "Cannot execute integration tests until Story 1.8b complete"
+    mitigation: "Tracked in Story 1.8b with 16-24 hour estimate"
+
+notes: |
+  **Story Split Resolution:**
+  Product Owner (Sarah) chose Option 1 (Split Story) based on Quinn's recommendation from
+  the original QA gate. Story 1.8a successfully delivers deployment + test scaffolding
+  infrastructure, which are complete and high-quality deliverables.
+
+  **Story 1.8a Deliverables (COMPLETE):**
+  - ✅ Devnet deployment (Program ID: 4hPgUuR7S8pyX7WxgaKTunaPCjMQLhEmBgQEyTrTvDNt)
+  - ✅ IDL synced to devnet
+  - ✅ Comprehensive test scaffolding (34 tests, 10 suites)
+  - ✅ Test infrastructure (devnet config, wallet funding, PDA derivation)
+  - ✅ Documentation (README.md updated)
+  - ✅ Unit tests passing (67 tests, zero regressions)
+
+  **Story 1.8b Scope (NEW STORY):**
+  - Implement register_node instruction
+  - Implement create_opportunity instruction
+  - Implement accept_bid instruction
+  - Enable 32 skipped integration tests
+  - Execute full test suite on devnet
+  - Document test results
+
+  **Quality Score Rationale:**
+  Score increased from 42 → 88 after story split and scope adjustment. Story 1.8a meets
+  all 7 adjusted acceptance criteria with high-quality deliverables. Minor deduction for
+  airdrop delay performance concern (defer to Story 1.8b).
+
+  **Gate Status: PASS**
+  Story 1.8a is complete within its adjusted scope and ready to be marked Done.

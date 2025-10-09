@@ -51,7 +51,7 @@ export class GitHubMCPService {
 
     this.client = new Client(
       {
-        name: 'american-nerd-ai-agent',
+        name: 'slop-machine-ai-agent',
         version: '1.0.0'
       },
       {
